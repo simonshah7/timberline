@@ -12,6 +12,7 @@ import { CreateCalendarModal } from '@/components/CreateCalendarModal';
 import { ExportModal } from '@/components/ExportModal';
 import { Calendar, Status, Swimlane, Campaign, Activity } from '@/db/schema';
 import * as htmlToImage from 'html-to-image';
+import PptxGenJS from 'pptxgenjs';
 
 type ViewType = 'timeline' | 'calendar' | 'table';
 

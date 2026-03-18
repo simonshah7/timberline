@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Activity, Status, Swimlane, Campaign } from '@/db/schema';
-import { formatDate, formatCurrency, CURRENCIES, REGIONS } from '@/lib/utils';
+import { CURRENCIES, REGIONS } from '@/lib/utils';
 
 interface TableViewProps {
   activities: Activity[];
@@ -16,6 +16,58 @@ interface TableViewProps {
 type SortField = 'title' | 'startDate' | 'endDate' | 'status' | 'swimlane' | 'campaign' | 'cost';
 type SortDirection = 'asc' | 'desc';
 
+interface ColumnDef {
+  id: string;
+  label: string;
+  sortField?: SortField;
+  minWidth?: string;
+}
+
+const ALL_COLUMNS: ColumnDef[] = [
+  { id: 'title', label: 'Title', sortField: 'title', minWidth: '200px' },
+  { id: 'status', label: 'Status', sortField: 'status', minWidth: '140px' },
+  { id: 'startDate', label: 'Start Date', sortField: 'startDate', minWidth: '150px' },
+  { id: 'endDate', label: 'End Date', sortField: 'endDate', minWidth: '150px' },
+  { id: 'swimlane', label: 'Swimlane', sortField: 'swimlane', minWidth: '140px' },
+  { id: 'campaign', label: 'Campaign', sortField: 'campaign', minWidth: '140px' },
+  { id: 'cost', label: 'Cost', sortField: 'cost', minWidth: '110px' },
+  { id: 'currency', label: 'Currency', minWidth: '100px' },
+  { id: 'region', label: 'Region', minWidth: '100px' },
+];
+
+const STORAGE_KEY = 'table_view_column_settings';
+
+interface ColumnSettings {
+  order: string[];
+  hidden: string[];
+}
+
+function loadColumnSettings(): ColumnSettings {
+  if (typeof window === 'undefined') {
+    return { order: ALL_COLUMNS.map((c) => c.id), hidden: [] };
+  }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Ensure any new columns are appended
+      const knownIds = new Set(ALL_COLUMNS.map((c) => c.id));
+      const order = parsed.order.filter((id: string) => knownIds.has(id));
+      for (const col of ALL_COLUMNS) {
+        if (!order.includes(col.id)) order.push(col.id);
+      }
+      return { order, hidden: parsed.hidden || [] };
+    }
+  } catch {}
+  return { order: ALL_COLUMNS.map((c) => c.id), hidden: [] };
+}
+
+function saveColumnSettings(settings: ColumnSettings) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  } catch {}
+}
+
 export function TableView({
   activities,
   statuses,
@@ -27,7 +79,117 @@ export function TableView({
   const [sortField, setSortField] = useState<SortField>('startDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [columnSettings, setColumnSettings] = useState<ColumnSettings>(loadColumnSettings);
+  const [showColumnMenu, setShowColumnMenu] = useState(false);
+  const [draggedColId, setDraggedColId] = useState<string | null>(null);
+  const [dragOverColId, setDragOverColId] = useState<string | null>(null);
 
+  useEffect(() => {
+    saveColumnSettings(columnSettings);
+  }, [columnSettings]);
+
+  // Close column menu on outside click
+  useEffect(() => {
+    if (!showColumnMenu) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-column-menu]')) {
+        setShowColumnMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showColumnMenu]);
+
+  const visibleColumns = columnSettings.order
+    .filter((id) => !columnSettings.hidden.includes(id))
+    .map((id) => ALL_COLUMNS.find((c) => c.id === id)!)
+    .filter(Boolean);
+
+  const toggleColumn = (colId: string) => {
+    // Don't allow hiding title — it's the primary identifier
+    if (colId === 'title') return;
+    setColumnSettings((prev) => {
+      const hidden = prev.hidden.includes(colId)
+        ? prev.hidden.filter((id) => id !== colId)
+        : [...prev.hidden, colId];
+      return { ...prev, hidden };
+    });
+  };
+
+  const resetColumns = () => {
+    setColumnSettings({ order: ALL_COLUMNS.map((c) => c.id), hidden: [] });
+  };
+
+  // --- Column drag-and-drop ---
+  const handleColDragStart = (colId: string) => {
+    setDraggedColId(colId);
+  };
+
+  const handleColDragOver = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    if (colId !== draggedColId) {
+      setDragOverColId(colId);
+    }
+  };
+
+  const handleColDrop = (targetColId: string) => {
+    if (!draggedColId || draggedColId === targetColId) {
+      setDraggedColId(null);
+      setDragOverColId(null);
+      return;
+    }
+    setColumnSettings((prev) => {
+      const order = [...prev.order];
+      const fromIdx = order.indexOf(draggedColId);
+      const toIdx = order.indexOf(targetColId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, draggedColId);
+      return { ...prev, order };
+    });
+    setDraggedColId(null);
+    setDragOverColId(null);
+  };
+
+  const handleColDragEnd = () => {
+    setDraggedColId(null);
+    setDragOverColId(null);
+  };
+
+  // --- Menu item drag-and-drop for reordering in the settings panel ---
+  const [menuDragId, setMenuDragId] = useState<string | null>(null);
+  const [menuDragOverId, setMenuDragOverId] = useState<string | null>(null);
+
+  const handleMenuDragStart = (colId: string) => {
+    setMenuDragId(colId);
+  };
+
+  const handleMenuDragOver = (e: React.DragEvent, colId: string) => {
+    e.preventDefault();
+    if (colId !== menuDragId) setMenuDragOverId(colId);
+  };
+
+  const handleMenuDrop = (targetColId: string) => {
+    if (!menuDragId || menuDragId === targetColId) {
+      setMenuDragId(null);
+      setMenuDragOverId(null);
+      return;
+    }
+    setColumnSettings((prev) => {
+      const order = [...prev.order];
+      const fromIdx = order.indexOf(menuDragId);
+      const toIdx = order.indexOf(targetColId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      order.splice(fromIdx, 1);
+      order.splice(toIdx, 0, menuDragId);
+      return { ...prev, order };
+    });
+    setMenuDragId(null);
+    setMenuDragOverId(null);
+  };
+
+  // --- Sorting ---
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -75,7 +237,7 @@ export function TableView({
     );
   };
 
-  const handleInlineEdit = async (activityId: string, field: string, value: string | null) => {
+  const handleInlineEdit = useCallback(async (activityId: string, field: string, value: string | null) => {
     const updates: Partial<Activity> = {};
     switch (field) {
       case 'title': if (value && value.trim()) updates.title = value.trim(); break;
@@ -89,6 +251,172 @@ export function TableView({
     }
     if (Object.keys(updates).length > 0) await onActivityUpdate(activityId, updates);
     setEditingCell(null);
+  }, [onActivityUpdate]);
+
+  // --- Render cell by column id ---
+  const renderCell = (col: ColumnDef, activity: Activity) => {
+    const status = statuses.find((s) => s.id === activity.statusId);
+    const swimlane = swimlanes.find((s) => s.id === activity.swimlaneId);
+    const campaign = campaigns.find((c) => c.id === activity.campaignId);
+
+    switch (col.id) {
+      case 'title':
+        return editingCell?.id === activity.id && editingCell?.field === 'title' ? (
+          <input
+            type="text"
+            defaultValue={activity.title}
+            autoFocus
+            className="w-full px-2 py-1 text-sm border border-accent-purple rounded-md bg-card text-foreground outline-none focus:ring-2 focus:ring-accent-purple/30"
+            onClick={(e) => e.stopPropagation()}
+            onBlur={(e) => handleInlineEdit(activity.id, 'title', e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleInlineEdit(activity.id, 'title', e.currentTarget.value);
+              } else if (e.key === 'Escape') {
+                setEditingCell(null);
+              }
+            }}
+          />
+        ) : (
+          <span
+            className="text-sm font-medium text-foreground cursor-text hover:text-accent-purple transition-colors"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setEditingCell({ id: activity.id, field: 'title' });
+            }}
+            title="Double-click to edit"
+          >
+            {activity.title}
+          </span>
+        );
+
+      case 'status':
+        return (
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <span
+              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: status?.color || '#888' }}
+            />
+            <select
+              value={activity.statusId || ''}
+              onChange={(e) => handleInlineEdit(activity.id, 'statusId', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer hover:text-accent-purple transition-colors appearance-none pr-4"
+            >
+              {statuses.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+
+      case 'startDate':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <input
+              type="date"
+              value={activity.startDate}
+              onChange={(e) => handleInlineEdit(activity.id, 'startDate', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer"
+            />
+          </div>
+        );
+
+      case 'endDate':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <input
+              type="date"
+              value={activity.endDate}
+              onChange={(e) => handleInlineEdit(activity.id, 'endDate', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer"
+            />
+          </div>
+        );
+
+      case 'swimlane':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <select
+              value={activity.swimlaneId}
+              onChange={(e) => handleInlineEdit(activity.id, 'swimlaneId', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer hover:text-accent-purple transition-colors"
+            >
+              {swimlanes.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+
+      case 'campaign':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <select
+              value={activity.campaignId || ''}
+              onChange={(e) => handleInlineEdit(activity.id, 'campaignId', e.target.value || null)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer hover:text-accent-purple transition-colors"
+            >
+              <option value="">None</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        );
+
+      case 'cost':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={activity.cost || '0'}
+              onChange={(e) => handleInlineEdit(activity.id, 'cost', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none w-20 tabular-nums"
+            />
+          </div>
+        );
+
+      case 'currency':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <select
+              value={activity.currency || 'US$'}
+              onChange={(e) => handleInlineEdit(activity.id, 'currency', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        );
+
+      case 'region':
+        return (
+          <div onClick={(e) => e.stopPropagation()}>
+            <select
+              value={activity.region || 'US'}
+              onChange={(e) => handleInlineEdit(activity.id, 'region', e.target.value)}
+              className="text-sm bg-transparent text-foreground outline-none cursor-pointer"
+            >
+              {REGIONS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   const thClass = "text-left px-4 py-2.5";

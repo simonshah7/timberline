@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv') => void;
+  onExport: (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv' | 'pptx') => void;
   currentView: 'timeline' | 'calendar' | 'table';
 }
 
@@ -18,7 +18,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
   const [startDate, setStartDate] = useState(firstOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(lastOfMonth.toISOString().split('T')[0]);
   const [exportType, setExportType] = useState<'timeline' | 'calendar' | 'table'>(currentView);
-  const [exportFormat, setExportFormat] = useState<'png' | 'csv'>('png');
+  const [exportFormat, setExportFormat] = useState<'png' | 'csv' | 'pptx'>('png');
 
   const setQuickRange = (range: 'month' | 'quarter' | 'year' | 'all') => {
     const now = new Date();
@@ -56,7 +56,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
 
   const handleTypeChange = (type: 'timeline' | 'calendar' | 'table') => {
     setExportType(type);
-    if (type !== 'table' && exportFormat === 'csv') {
+    if (type !== 'table' && (exportFormat === 'csv')) {
       setExportFormat('png');
     }
   };
