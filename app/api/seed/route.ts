@@ -545,7 +545,7 @@ async function seedData() {
   ]);
 
   // ─── Event Attendees ───────────────────────────────────
-  const reinventAttendees = await db.insert(eventAttendees).values([
+  await db.insert(eventAttendees).values([
     { eventId: eventReInvent.id, name: 'Sarah Chen', email: 'sarah.chen@redwood.io', attendeeType: 'internal' as const, role: 'presenting', hasPass: true, travelStatus: 'confirmed' },
     { eventId: eventReInvent.id, name: 'Mike Rodriguez', email: 'mike.r@redwood.io', attendeeType: 'internal' as const, role: 'staffing booth', hasPass: true, travelStatus: 'booked' },
     { eventId: eventReInvent.id, name: 'Emily Park', email: 'emily.p@redwood.io', attendeeType: 'internal' as const, role: 'presenting', hasPass: true, travelStatus: 'confirmed' },
@@ -559,7 +559,7 @@ async function seedData() {
     { eventId: eventLondonDinner.id, name: 'James Liu', email: 'james.l@redwood.io', attendeeType: 'internal' as const, role: 'hosting', hasPass: false, travelStatus: 'confirmed' },
     { eventId: eventLondonDinner.id, name: 'Nigel Thornton', email: 'n.thornton@barclays.co.uk', company: 'Barclays', attendeeType: 'customer' as const, role: 'guest', hasPass: false },
     { eventId: eventLondonDinner.id, name: 'Sophie Martin', email: 's.martin@hsbc.com', company: 'HSBC', attendeeType: 'customer' as const, role: 'guest', hasPass: false },
-  ]).returning();
+  ]);
 
   // ─── Checklist Items ───────────────────────────────────
   await db.insert(checklistItems).values([
