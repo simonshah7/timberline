@@ -69,8 +69,8 @@ export function Header({
     { key: 'timeline', label: 'Timeline', description: 'Gantt-style timeline with drag-to-create activities' },
     { key: 'calendar', label: 'Calendar', description: 'Month grid view of all activities' },
     { key: 'table', label: 'Table', description: 'Spreadsheet view with inline editing' },
-    { key: 'dashboard', label: 'Dashboard', description: 'Budget, SAO, and performance analytics' },
     { key: 'events', label: 'Events', description: 'Manage events, attendees, and checklists' },
+    { key: 'dashboard', label: 'Dashboard', description: 'Budget, SAO, and performance analytics' },
   ];
 
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -113,7 +113,7 @@ export function Header({
         <div className="flex items-center gap-2 sm:gap-5 min-w-0">
           {/* Logo */}
           <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-            <img src="/launchgrid-logo.png" alt="LaunchGrid" className="h-8 w-auto" />
+            <img src="/launchgrid-logo.png" alt="LaunchGrid" className="h-12 w-auto" />
             <h1 className="text-base font-semibold tracking-tight text-foreground hidden sm:block">
               LaunchGrid
             </h1>
