@@ -19,6 +19,7 @@ import type { EventListItem } from '@/components/EventsListView';
 import { EventDetailView } from '@/components/EventDetailView';
 import type { VoiceAgentCallbacks, CalendarContext } from '@/hooks/useVoiceAgent';
 import { exportToPNG, exportToCSV } from '@/lib/export';
+import { ToastProvider, useToast } from '@/components/Toast';
 
 type ViewType = 'timeline' | 'calendar' | 'table' | 'dashboard' | 'events';
 
@@ -30,14 +31,23 @@ interface CalendarData extends Calendar {
 }
 
 export default function Home() {
+  return (
+    <ToastProvider>
+      <HomeInner />
+    </ToastProvider>
+  );
+}
+
+function HomeInner() {
+  const { toast } = useToast();
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [currentCalendar, setCurrentCalendar] = useState<CalendarData | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>('timeline');
   const [isLoading, setIsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
-  const [selectedStatusId, setSelectedStatusId] = useState<string | null>(null);
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<string[]>([]);
+  const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
 
   const [showCreateCalendar, setShowCreateCalendar] = useState(false);
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -59,6 +69,30 @@ export default function Home() {
   const [showEventCreate, setShowEventCreate] = useState(false);
 
   const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // --- URL state sync: read view/event from URL on mount ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view') as ViewType | null;
+    const eventParam = params.get('event');
+    if (viewParam && ['timeline', 'calendar', 'table', 'dashboard', 'events'].includes(viewParam)) {
+      setCurrentView(viewParam);
+    }
+    if (eventParam) {
+      setSelectedEventId(eventParam);
+      setCurrentView('events');
+    }
+  }, []);
+
+  // --- URL state sync: write view/event to URL ---
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (currentView !== 'timeline') params.set('view', currentView);
+    if (selectedEventId) params.set('event', selectedEventId);
+    const qs = params.toString();
+    const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }, [currentView, selectedEventId]);
 
   useEffect(() => {
     fetchCalendars();
@@ -126,16 +160,26 @@ export default function Home() {
     const newCalendar = await response.json();
     setCalendars((prev) => [...prev, newCalendar]);
     fetchCalendarData(newCalendar.id);
+    toast.success(`Workspace "${name}" created`);
   };
 
   const handleCreateSwimlane = async (name: string) => {
     if (!currentCalendar) return;
-    const response = await fetch('/api/swimlanes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ calendarId: currentCalendar.id, name }),
-    });
-    if (response.ok) fetchCalendarData(currentCalendar.id);
+    try {
+      const response = await fetch('/api/swimlanes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ calendarId: currentCalendar.id, name }),
+      });
+      if (response.ok) {
+        fetchCalendarData(currentCalendar.id);
+        toast.success(`Channel "${name}" added`);
+      } else {
+        toast.error('Failed to create channel');
+      }
+    } catch {
+      toast.error('Failed to create channel');
+    }
   };
 
   const handleEditSwimlane = async (id: string, name: string) => {
@@ -149,7 +193,12 @@ export default function Home() {
 
   const handleDeleteSwimlane = async (id: string) => {
     const response = await fetch(`/api/swimlanes/${id}`, { method: 'DELETE' });
-    if (response.ok && currentCalendar) fetchCalendarData(currentCalendar.id);
+    if (response.ok && currentCalendar) {
+      fetchCalendarData(currentCalendar.id);
+      toast.info('Channel deleted');
+    } else {
+      toast.error('Failed to delete channel');
+    }
   };
 
   const handleReorderSwimlanes = async (swimlaneId: string, newIndex: number) => {
@@ -187,12 +236,14 @@ export default function Home() {
       throw new Error(errorData.error || 'Failed to save activity');
     }
     fetchCalendarData(currentCalendar.id);
+    toast.success(editingActivity ? 'Activity updated' : 'Activity created');
   };
 
   const handleActivityDelete = async (id: string) => {
     const response = await fetch(`/api/activities/${id}`, { method: 'DELETE' });
     if (!response.ok) throw new Error('Failed to delete activity');
     if (currentCalendar) fetchCalendarData(currentCalendar.id);
+    toast.info('Activity deleted');
   };
 
   const handleActivityUpdate = async (id: string, updates: Partial<Activity>) => {
@@ -286,11 +337,14 @@ export default function Home() {
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        console.error('Failed to batch create activities:', err.error);
+        toast.error(err.error || 'Failed to create activities from brief');
+      } else {
+        toast.success(`${items.length} activities created from brief`);
       }
       fetchCalendarData(currentCalendar.id);
     } catch (error) {
       console.error('Failed to apply brief:', error);
+      toast.error('Failed to apply brief');
     }
     setShowBriefGenerator(false);
   };
@@ -321,9 +375,13 @@ export default function Home() {
         await fetchEvents(currentCalendar.id);
         setCurrentView('events');
         setSelectedEventId(newEvent.id);
+        toast.success('Event created');
+      } else {
+        toast.error('Failed to create event');
       }
     } catch (error) {
       console.error('Failed to create event:', error);
+      toast.error('Failed to create event');
     }
   };
 
@@ -342,11 +400,13 @@ export default function Home() {
       // Refresh everything
       setCurrentCalendar(null);
       setSearchQuery('');
-      setSelectedCampaignId(null);
-      setSelectedStatusId(null);
+      setSelectedCampaignIds([]);
+      setSelectedStatusIds([]);
       await fetchCalendars();
+      toast.success(action === 'clear' ? 'All data cleared' : action === 'reset' ? 'Data reset' : 'Sample data loaded');
     } catch (error) {
       console.error('Seed action failed:', error);
+      toast.error('Data operation failed');
     } finally {
       setIsSeedingData(false);
     }
@@ -363,24 +423,26 @@ export default function Home() {
         startDate,
         endDate
       );
+      toast.success('CSV exported');
       return;
     }
     const elementToCapture = mainContentRef.current;
-    if (!elementToCapture) { alert('Unable to export: content not ready'); return; }
+    if (!elementToCapture) { toast.error('Unable to export: content not ready'); return; }
     try {
       await exportToPNG(elementToCapture, exportType, startDate, endDate);
+      toast.success('PNG exported');
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      toast.error('Export failed. Please try again.');
     }
   };
 
   const filteredActivities = useMemo(() => currentCalendar?.activities.filter((activity) => {
     if (searchQuery && !activity.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (selectedCampaignId && activity.campaignId !== selectedCampaignId) return false;
-    if (selectedStatusId && activity.statusId !== selectedStatusId) return false;
+    if (selectedCampaignIds.length > 0 && !selectedCampaignIds.includes(activity.campaignId)) return false;
+    if (selectedStatusIds.length > 0 && !selectedStatusIds.includes(activity.statusId)) return false;
     return true;
-  }) || [], [currentCalendar?.activities, searchQuery, selectedCampaignId, selectedStatusId]);
+  }) || [], [currentCalendar?.activities, searchQuery, selectedCampaignIds, selectedStatusIds]);
 
   // Loading state
   if (isLoading) {
@@ -476,8 +538,8 @@ export default function Home() {
         onViewChange={(view: ViewType) => { setCurrentView(view); setSelectedEventId(null); }}
         onCalendarSelect={(calendar) => {
           setSearchQuery('');
-          setSelectedCampaignId(null);
-          setSelectedStatusId(null);
+          setSelectedCampaignIds([]);
+          setSelectedStatusIds([]);
           setSelectedEventId(null);
           fetchCalendarData(calendar.id);
         }}
@@ -499,11 +561,11 @@ export default function Home() {
           campaigns={currentCalendar?.campaigns || []}
           statuses={currentCalendar?.statuses || []}
           searchQuery={searchQuery}
-          selectedCampaignId={selectedCampaignId}
-          selectedStatusId={selectedStatusId}
+          selectedCampaignIds={selectedCampaignIds}
+          selectedStatusIds={selectedStatusIds}
           onSearchChange={setSearchQuery}
-          onCampaignChange={setSelectedCampaignId}
-          onStatusChange={setSelectedStatusId}
+          onCampaignChange={setSelectedCampaignIds}
+          onStatusChange={setSelectedStatusIds}
         />
       )}
 
@@ -583,6 +645,7 @@ export default function Home() {
                 campaigns={currentCalendar.campaigns}
                 onActivityClick={handleActivityClick}
                 onActivityUpdate={handleActivityUpdate}
+                onActivityDelete={handleActivityDelete}
               />
             )}
 
@@ -692,12 +755,12 @@ export default function Home() {
             onDeleteActivity: handleActivityDelete,
             onSwitchView: setCurrentView,
             onSetSearch: setSearchQuery,
-            onSetCampaignFilter: setSelectedCampaignId,
-            onSetStatusFilter: setSelectedStatusId,
+            onSetCampaignFilter: setSelectedCampaignIds,
+            onSetStatusFilter: setSelectedStatusIds,
             onClearFilters: () => {
               setSearchQuery('');
-              setSelectedCampaignId(null);
-              setSelectedStatusId(null);
+              setSelectedCampaignIds([]);
+              setSelectedStatusIds([]);
             },
             onOpenCopilot: () => setShowCopilot(true),
             onOpenBriefGenerator: () => setShowBriefGenerator(true),

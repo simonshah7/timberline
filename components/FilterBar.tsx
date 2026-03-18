@@ -1,34 +1,69 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Campaign, Status } from '@/db/schema';
+
+interface SavedFilter {
+  id: string;
+  name: string;
+  searchQuery: string;
+  campaignIds: string[];
+  statusIds: string[];
+}
 
 interface FilterBarProps {
   campaigns: Campaign[];
   statuses: Status[];
   searchQuery: string;
-  selectedCampaignId: string | null;
-  selectedStatusId: string | null;
+  selectedCampaignIds: string[];
+  selectedStatusIds: string[];
   onSearchChange: (query: string) => void;
-  onCampaignChange: (campaignId: string | null) => void;
-  onStatusChange: (statusId: string | null) => void;
+  onCampaignChange: (campaignIds: string[]) => void;
+  onStatusChange: (statusIds: string[]) => void;
+}
+
+const SAVED_FILTERS_KEY = 'launchgrid_saved_filters';
+
+function loadSavedFilters(): SavedFilter[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SAVED_FILTERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSavedFilters(filters: SavedFilter[]) {
+  localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(filters));
 }
 
 export function FilterBar({
   campaigns,
   statuses,
   searchQuery,
-  selectedCampaignId,
-  selectedStatusId,
+  selectedCampaignIds,
+  selectedStatusIds,
   onSearchChange,
   onCampaignChange,
   onStatusChange,
 }: FilterBarProps) {
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [savedOpen, setSavedOpen] = useState(false);
+  const [savingFilter, setSavingFilter] = useState(false);
+  const [filterName, setFilterName] = useState('');
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+
   const campaignRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
+  const savedRef = useRef<HTMLDivElement>(null);
+  const saveInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setSavedFilters(loadSavedFilters());
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -38,14 +73,76 @@ export function FilterBar({
       if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
         setStatusOpen(false);
       }
+      if (savedRef.current && !savedRef.current.contains(event.target as Node)) {
+        setSavedOpen(false);
+        setSavingFilter(false);
+      }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const selectedCampaign = campaigns.find((c) => c.id === selectedCampaignId);
-  const selectedStatus = statuses.find((s) => s.id === selectedStatusId);
-  const hasActiveFilters = !!selectedCampaignId || !!selectedStatusId || !!searchQuery;
+  useEffect(() => {
+    if (savingFilter && saveInputRef.current) {
+      saveInputRef.current.focus();
+    }
+  }, [savingFilter]);
+
+  const hasActiveFilters = selectedCampaignIds.length > 0 || selectedStatusIds.length > 0 || !!searchQuery;
+
+  const toggleCampaign = useCallback((id: string) => {
+    if (selectedCampaignIds.includes(id)) {
+      onCampaignChange(selectedCampaignIds.filter((c) => c !== id));
+    } else {
+      onCampaignChange([...selectedCampaignIds, id]);
+    }
+  }, [selectedCampaignIds, onCampaignChange]);
+
+  const toggleStatus = useCallback((id: string) => {
+    if (selectedStatusIds.includes(id)) {
+      onStatusChange(selectedStatusIds.filter((s) => s !== id));
+    } else {
+      onStatusChange([...selectedStatusIds, id]);
+    }
+  }, [selectedStatusIds, onStatusChange]);
+
+  const handleSaveFilter = () => {
+    if (!filterName.trim()) return;
+    const newFilter: SavedFilter = {
+      id: Date.now().toString(),
+      name: filterName.trim(),
+      searchQuery,
+      campaignIds: selectedCampaignIds,
+      statusIds: selectedStatusIds,
+    };
+    const updated = [...savedFilters, newFilter];
+    setSavedFilters(updated);
+    persistSavedFilters(updated);
+    setFilterName('');
+    setSavingFilter(false);
+  };
+
+  const handleLoadFilter = (filter: SavedFilter) => {
+    onSearchChange(filter.searchQuery);
+    onCampaignChange(filter.campaignIds);
+    onStatusChange(filter.statusIds);
+    setSavedOpen(false);
+  };
+
+  const handleDeleteFilter = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = savedFilters.filter((f) => f.id !== id);
+    setSavedFilters(updated);
+    persistSavedFilters(updated);
+  };
+
+  const campaignLabel = selectedCampaignIds.length > 0
+    ? `Campaign (${selectedCampaignIds.length})`
+    : 'Campaign';
+
+  const statusLabel = selectedStatusIds.length > 0
+    ? `Status (${selectedStatusIds.length})`
+    : 'All Statuses';
 
   return (
     <div className="bg-background border-b border-card-border px-3 sm:px-4 py-2">
@@ -75,113 +172,225 @@ export function FilterBar({
             />
           </div>
 
-        {/* Campaign Filter */}
-        <div className="relative" ref={campaignRef}>
-          <button
-            onClick={() => { setCampaignOpen(!campaignOpen); setStatusOpen(false); }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
-              selectedCampaignId
-                ? 'bg-accent-soft text-accent border border-accent/20 font-medium'
-                : 'bg-muted text-muted-foreground hover:text-foreground border border-transparent'
-            }`}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-            </svg>
-            <span>{selectedCampaign?.name || 'Campaign'}</span>
-            <svg className={`w-3.5 h-3.5 transition-transform ${campaignOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <AnimatePresence>
-            {campaignOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-                className="absolute top-full left-0 mt-1.5 w-52 bg-card rounded-xl shadow-lg shadow-black/8 border border-card-border z-50 overflow-hidden"
-              >
-                <div className="py-1">
-                  <button
-                    onClick={() => { onCampaignChange(null); setCampaignOpen(false); }}
-                    className={`w-full px-3.5 py-2 text-left text-sm transition-colors ${
-                      !selectedCampaignId ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    All Campaigns
-                  </button>
-                  {campaigns.map((campaign) => (
+          {/* Campaign Filter */}
+          <div className="relative" ref={campaignRef}>
+            <button
+              onClick={() => { setCampaignOpen(!campaignOpen); setStatusOpen(false); setSavedOpen(false); }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${
+                selectedCampaignIds.length > 0
+                  ? 'bg-accent-soft text-accent border border-accent/20 font-medium'
+                  : 'bg-muted text-muted-foreground hover:text-foreground border border-transparent'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+              </svg>
+              <span>{campaignLabel}</span>
+              <svg className={`w-3.5 h-3.5 transition-transform ${campaignOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <AnimatePresence>
+              {campaignOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-1.5 w-56 bg-card rounded-xl shadow-lg shadow-black/8 border border-card-border z-50 overflow-hidden"
+                >
+                  <div className="py-1 max-h-64 overflow-y-auto">
                     <button
-                      key={campaign.id}
-                      onClick={() => { onCampaignChange(campaign.id); setCampaignOpen(false); }}
+                      onClick={() => { onCampaignChange([]); }}
                       className={`w-full px-3.5 py-2 text-left text-sm transition-colors ${
-                        selectedCampaignId === campaign.id ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
+                        selectedCampaignIds.length === 0 ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
                       }`}
                     >
-                      {campaign.name}
+                      All Campaigns
                     </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                    {campaigns.map((campaign) => {
+                      const isSelected = selectedCampaignIds.includes(campaign.id);
+                      return (
+                        <button
+                          key={campaign.id}
+                          onClick={() => toggleCampaign(campaign.id)}
+                          className={`w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
+                            isSelected ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
+                          }`}
+                        >
+                          <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+                            isSelected ? 'bg-accent border-accent' : 'border-card-border'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </span>
+                          {campaign.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Status Filter */}
           <div className="relative" ref={statusRef}>
             <button
-              onClick={() => setStatusOpen(!statusOpen)}
-              className="flex items-center gap-2 px-3 py-2 bg-card border border-card-border rounded-lg text-sm hover:bg-muted"
+              onClick={() => { setStatusOpen(!statusOpen); setCampaignOpen(false); setSavedOpen(false); }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all ${
+                selectedStatusIds.length > 0
+                  ? 'bg-accent-soft text-accent border border-accent/20 font-medium'
+                  : 'bg-card border border-card-border hover:bg-muted'
+              }`}
             >
-              {selectedStatus && (
-                <span
-                  className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: selectedStatus.color }}
-                />
-              )}
-              <span className="text-foreground">
-                {selectedStatus?.name || 'All Statuses'}
-              </span>
-              <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span className="text-foreground">{statusLabel}</span>
+              <svg className={`w-4 h-4 text-muted-foreground transition-transform ${statusOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
             <AnimatePresence>
-            {statusOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                transition={{ duration: 0.15 }}
-                className="absolute top-full left-0 mt-1.5 w-48 bg-card rounded-xl shadow-lg shadow-black/8 border border-card-border z-50 overflow-hidden"
-              >
-                <div className="py-1">
-                  <button
-                    onClick={() => { onStatusChange(null); setStatusOpen(false); }}
-                    className={`w-full px-3.5 py-2 text-left text-sm transition-colors ${
-                      !selectedStatusId ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
-                    }`}
-                  >
-                    All Statuses
-                  </button>
-                  {statuses.map((status) => (
+              {statusOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-1.5 w-52 bg-card rounded-xl shadow-lg shadow-black/8 border border-card-border z-50 overflow-hidden"
+                >
+                  <div className="py-1 max-h-64 overflow-y-auto">
                     <button
-                      key={status.id}
-                      onClick={() => { onStatusChange(status.id); setStatusOpen(false); }}
-                      className={`w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
-                        selectedStatusId === status.id ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
+                      onClick={() => { onStatusChange([]); }}
+                      className={`w-full px-3.5 py-2 text-left text-sm transition-colors ${
+                        selectedStatusIds.length === 0 ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
                       }`}
                     >
-                      <span className="w-2.5 h-2.5 rounded-full ring-1 ring-black/10" style={{ backgroundColor: status.color }} />
-                      {status.name}
+                      All Statuses
                     </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                    {statuses.map((status) => {
+                      const isSelected = selectedStatusIds.includes(status.id);
+                      return (
+                        <button
+                          key={status.id}
+                          onClick={() => toggleStatus(status.id)}
+                          className={`w-full px-3.5 py-2 text-left text-sm flex items-center gap-2.5 transition-colors ${
+                            isSelected ? 'bg-accent-soft text-accent font-medium' : 'text-foreground hover:bg-muted'
+                          }`}
+                        >
+                          <span className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+                            isSelected ? 'bg-accent border-accent' : 'border-card-border'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </span>
+                          <span className="w-2.5 h-2.5 rounded-full ring-1 ring-black/10 flex-shrink-0" style={{ backgroundColor: status.color }} />
+                          {status.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Saved Filters */}
+          <div className="relative" ref={savedRef}>
+            <button
+              onClick={() => { setSavedOpen(!savedOpen); setCampaignOpen(false); setStatusOpen(false); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-muted text-muted-foreground hover:text-foreground border border-transparent transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+              </svg>
+              <span>Saved</span>
+              {savedFilters.length > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-semibold bg-accent-soft text-accent rounded-full leading-none">
+                  {savedFilters.length}
+                </span>
+              )}
+              <svg className={`w-3.5 h-3.5 transition-transform ${savedOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <AnimatePresence>
+              {savedOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-1.5 w-64 bg-card rounded-xl shadow-lg shadow-black/8 border border-card-border z-50 overflow-hidden"
+                >
+                  <div className="py-1 max-h-64 overflow-y-auto">
+                    {savedFilters.length === 0 && !savingFilter && (
+                      <div className="px-3.5 py-3 text-sm text-muted-foreground text-center">
+                        No saved filters yet
+                      </div>
+                    )}
+                    {savedFilters.map((filter) => (
+                      <button
+                        key={filter.id}
+                        onClick={() => handleLoadFilter(filter)}
+                        className="w-full px-3.5 py-2 text-left text-sm flex items-center justify-between gap-2 text-foreground hover:bg-muted transition-colors group"
+                      >
+                        <span className="truncate">{filter.name}</span>
+                        <span
+                          onClick={(e) => handleDeleteFilter(filter.id, e)}
+                          className="flex-shrink-0 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </span>
+                      </button>
+                    ))}
+                    {savingFilter ? (
+                      <div className="px-3 py-2 flex items-center gap-2">
+                        <input
+                          ref={saveInputRef}
+                          type="text"
+                          placeholder="Filter name..."
+                          value={filterName}
+                          onChange={(e) => setFilterName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveFilter();
+                            if (e.key === 'Escape') { setSavingFilter(false); setFilterName(''); }
+                          }}
+                          className="flex-1 px-2 py-1 text-sm bg-background border border-card-border rounded text-foreground focus:outline-none focus:ring-1 focus:ring-accent-purple"
+                        />
+                        <button
+                          onClick={handleSaveFilter}
+                          disabled={!filterName.trim()}
+                          className="px-2 py-1 text-xs font-medium bg-accent text-white rounded hover:bg-accent/90 disabled:opacity-40 transition-colors"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    ) : (
+                      hasActiveFilters && (
+                        <button
+                          onClick={() => setSavingFilter(true)}
+                          className="w-full px-3.5 py-2 text-left text-sm text-accent hover:bg-muted transition-colors border-t border-card-border flex items-center gap-2"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                          Save current filters
+                        </button>
+                      )
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Clear All Filters */}
@@ -193,8 +402,8 @@ export function FilterBar({
               exit={{ opacity: 0, scale: 0.9 }}
               onClick={() => {
                 onSearchChange('');
-                onCampaignChange(null);
-                onStatusChange(null);
+                onCampaignChange([]);
+                onStatusChange([]);
               }}
               className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors"
             >
@@ -206,6 +415,67 @@ export function FilterBar({
           )}
         </AnimatePresence>
       </div>
+
+      {/* Selected Chips */}
+      <AnimatePresence>
+        {(selectedCampaignIds.length > 0 || selectedStatusIds.length > 0) && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex flex-wrap items-center gap-1.5 pt-2 overflow-hidden"
+          >
+            {selectedCampaignIds.map((id) => {
+              const campaign = campaigns.find((c) => c.id === id);
+              if (!campaign) return null;
+              return (
+                <motion.span
+                  key={`campaign-${id}`}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-accent-soft text-accent rounded-full"
+                >
+                  {campaign.name}
+                  <span
+                    onClick={() => toggleCampaign(id)}
+                    className="cursor-pointer hover:text-foreground transition-colors"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </span>
+                </motion.span>
+              );
+            })}
+            {selectedStatusIds.map((id) => {
+              const status = statuses.find((s) => s.id === id);
+              if (!status) return null;
+              return (
+                <motion.span
+                  key={`status-${id}`}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-accent-soft text-accent rounded-full"
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: status.color }} />
+                  {status.name}
+                  <span
+                    onClick={() => toggleStatus(id)}
+                    className="cursor-pointer hover:text-foreground transition-colors"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </span>
+                </motion.span>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

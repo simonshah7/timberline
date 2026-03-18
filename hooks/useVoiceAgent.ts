@@ -21,8 +21,8 @@ export interface VoiceAgentCallbacks {
   onDeleteActivity: (id: string) => Promise<void>;
   onSwitchView: (view: ViewType) => void;
   onSetSearch: (query: string) => void;
-  onSetCampaignFilter: (id: string | null) => void;
-  onSetStatusFilter: (id: string | null) => void;
+  onSetCampaignFilter: (ids: string[]) => void;
+  onSetStatusFilter: (ids: string[]) => void;
   onClearFilters: () => void;
   onOpenCopilot: () => void;
   onOpenBriefGenerator: () => void;
@@ -201,13 +201,13 @@ export function useVoiceAgent(
           const camp = ctx?.campaigns.find(
             (c) => c.name.toLowerCase() === (params.campaignName as string).toLowerCase()
           );
-          cb.onSetCampaignFilter(camp?.id || null);
+          cb.onSetCampaignFilter(camp ? [camp.id] : []);
         }
         if (params.statusName) {
           const st = ctx?.statuses.find(
             (s) => s.name.toLowerCase() === (params.statusName as string).toLowerCase()
           );
-          cb.onSetStatusFilter(st?.id || null);
+          cb.onSetStatusFilter(st ? [st.id] : []);
         }
         break;
       }

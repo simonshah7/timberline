@@ -135,6 +135,7 @@ export function Header({
                 ref={(el) => { tabRefs.current[view.key] = el; }}
                 onClick={() => onViewChange(view.key)}
                 title={view.description}
+                aria-label={view.label}
                 className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 ${
                   currentView === view.key
                     ? 'text-foreground'
@@ -159,6 +160,7 @@ export function Header({
                     : 'text-muted-foreground'
                 }`}
                 title={view.description}
+                aria-label={view.label}
               >
                 {VIEW_ICONS[view.key]}
               </button>
@@ -213,6 +215,7 @@ export function Header({
           <button
             onClick={onExport}
             disabled={!currentCalendar}
+            aria-label="Export"
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:text-foreground hover:bg-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
@@ -241,6 +244,7 @@ export function Header({
             disabled={!currentCalendar}
             className="p-2 text-white bg-accent-purple-btn rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             title="New Activity"
+            aria-label="New Activity"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -248,6 +252,7 @@ export function Header({
           </button>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Menu"
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             {mobileMenuOpen ? (

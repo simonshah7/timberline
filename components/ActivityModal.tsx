@@ -100,6 +100,7 @@ export function ActivityModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'metrics' | 'documents'>('details');
+  const [initialFormSnapshot, setInitialFormSnapshot] = useState('');
 
   useEffect(() => {
     if (activity) {
@@ -148,7 +149,20 @@ export function ActivityModal({
     }
     setErrors({});
     setShowDeleteConfirm(false);
+    // Snapshot initial form state for dirty check
+    setTimeout(() => {
+      setInitialFormSnapshot(JSON.stringify(formData));
+    }, 0);
   }, [activity, isOpen, statuses, swimlanes, defaultStartDate, defaultEndDate, defaultSwimlaneId, defaults]);
+
+  const isDirty = initialFormSnapshot && JSON.stringify(formData) !== initialFormSnapshot;
+
+  const handleClose = () => {
+    if (isDirty) {
+      if (!window.confirm('You have unsaved changes. Discard them?')) return;
+    }
+    onClose();
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -251,7 +265,7 @@ export function ActivityModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
             className="absolute inset-0 bg-overlay backdrop-blur-sm"
-            onClick={onClose}
+            onClick={handleClose}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 8 }}
@@ -277,7 +291,7 @@ export function ActivityModal({
                   {activity ? 'Edit Activity' : 'New Activity'}
                 </h2>
               </div>
-              <button onClick={onClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+              <button onClick={handleClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -798,7 +812,7 @@ export function ActivityModal({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-4 py-1.5 text-xs font-bold text-foreground bg-muted rounded hover:opacity-80 transition-opacity uppercase tracking-tight"
               >
                 Cancel

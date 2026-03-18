@@ -44,8 +44,12 @@ export function ActivityBar({
     <div
       className="activity-bar absolute rounded-lg cursor-pointer hover:shadow-lg transition-shadow overflow-hidden group border border-white/15"
       style={style}
+      role="button"
+      tabIndex={0}
+      aria-label={`${activity.title}, ${activity.startDate} to ${activity.endDate}`}
       onDoubleClick={onDoubleClick}
       onMouseDown={onMouseDown}
+      onKeyDown={(e) => { if (e.key === 'Enter') onDoubleClick(); }}
       title={`${activity.title}\n${activity.startDate} - ${activity.endDate}`}
     >
       {/* Resize handles */}
@@ -76,8 +80,13 @@ export function ActivityBar({
 
       {/* Content */}
       <div className={`h-full flex flex-col px-2 ${config.padding} pointer-events-none`}>
-        <div className={`font-bold truncate ${config.fontSize} pr-6`} style={{ color: textColor }}>
-          {activity.title}
+        <div className={`font-bold truncate ${config.fontSize} pr-6 flex items-center gap-1`} style={{ color: textColor }}>
+          {status && cardStyle === 'small' && (
+            <span className={`text-[8px] ${isLight ? 'bg-black/10' : 'bg-white/20'} px-0.5 rounded flex-shrink-0`} style={{ color: textColor }}>
+              {status.name.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <span className="truncate">{activity.title}</span>
         </div>
 
         {cardStyle !== 'small' && (
