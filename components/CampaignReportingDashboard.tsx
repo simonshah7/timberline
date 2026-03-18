@@ -1512,6 +1512,8 @@ function ICPPenetration({ rows: _rows }: { rows: CampaignReportData[] }) {
         </Card>
       </div>
 
+      {subTab === 'overview' && (
+        <>
           {/* Stage Funnel using real stages */}
           <Card title="Opportunity Stage Funnel">
             <FunnelChart
