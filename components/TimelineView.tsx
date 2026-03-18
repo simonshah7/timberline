@@ -32,11 +32,12 @@ interface TimelineViewProps {
   onEventCreate?: (startDate: string, endDate: string) => void;
 }
 
-type ZoomLevel = 'year' | 'quarter' | 'month';
+type ZoomLevel = 'year' | 'half' | 'quarter' | 'month';
 type CardStyle = 'small' | 'medium' | 'large';
 
 const ZOOM_CONFIG: Record<ZoomLevel, { daysVisible: number; dayWidth: number }> = {
   year: { daysVisible: 365, dayWidth: 4 },
+  half: { daysVisible: 180, dayWidth: 10 },
   quarter: { daysVisible: 90, dayWidth: 24 },
   month: { daysVisible: 30, dayWidth: 30 },
 };
@@ -269,6 +270,9 @@ export function TimelineView({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // --- Drag target swimlane tracking ---
+  const [dragOverSwimlaneId, setDragOverSwimlaneId] = useState<string | null>(null);
+
   // --- Coordinate helpers ---
   const getXFromDate = useCallback((date: Date | string): number => {
     const d = new Date(date);
@@ -313,19 +317,34 @@ export function TimelineView({
   }, [onActivityUpdate]);
 
   // --- Navigation ---
+  const getNavDays = () => {
+    switch (zoomLevel) {
+      case 'year': return 365;
+      case 'half': return 180;
+      case 'quarter': return 90;
+      case 'month': return 30;
+    }
+  };
+
   const navigatePrev = () => {
-    const days = zoomLevel === 'year' ? 365 : zoomLevel === 'quarter' ? 90 : 30;
-    setStartDate(addDays(startDate, -days));
+    setStartDate(addDays(startDate, -getNavDays()));
   };
 
   const navigateNext = () => {
-    const days = zoomLevel === 'year' ? 365 : zoomLevel === 'quarter' ? 90 : 30;
-    setStartDate(addDays(startDate, days));
+    setStartDate(addDays(startDate, getNavDays()));
   };
 
   const navigateToday = () => {
     const now = new Date();
     setStartDate(new Date(now.getFullYear(), now.getMonth(), 1));
+    // Scroll to today line after state update
+    requestAnimationFrame(() => {
+      if (timelineRef.current) {
+        const todayX = getDaysBetween(new Date(now.getFullYear(), now.getMonth(), 1), now) * config.dayWidth;
+        const containerWidth = timelineRef.current.clientWidth;
+        timelineRef.current.scrollLeft = Math.max(0, todayX - containerWidth / 3);
+      }
+    });
   };
 
   // --- Today line ---
@@ -416,17 +435,22 @@ export function TimelineView({
           </div>
 
           <div className="flex bg-muted rounded-md p-0.5">
-            {(['year', 'quarter', 'month'] as ZoomLevel[]).map((level) => (
+            {([
+              { key: 'year' as ZoomLevel, label: 'Year' },
+              { key: 'half' as ZoomLevel, label: 'Half' },
+              { key: 'quarter' as ZoomLevel, label: 'Quarter' },
+              { key: 'month' as ZoomLevel, label: 'Month' },
+            ]).map(({ key, label }) => (
               <button
-                key={level}
-                onClick={() => setZoomLevel(level)}
-                className={`px-2.5 py-1 text-xs font-medium rounded capitalize transition-colors ${
-                  zoomLevel === level
+                key={key}
+                onClick={() => setZoomLevel(key)}
+                className={`px-2.5 py-1 text-xs font-medium rounded transition-colors ${
+                  zoomLevel === key
                     ? 'bg-card text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {level}
+                {label}
               </button>
             ))}
           </div>
@@ -632,14 +656,16 @@ export function TimelineView({
               return (
                 <div
                   key={swimlane.id}
-                  className={`relative border-b border-card-border/30 ${
+                  className={`relative border-b border-card-border/30 transition-colors ${
                     index % 2 === 0 ? 'bg-card' : 'bg-surface/30'
-                  } ${dragState.isDragging && dragState.dragStart?.swimlaneId === swimlane.id ? 'bg-accent/5' : ''}`}
+                  } ${dragState.isDragging && dragState.dragStart?.swimlaneId === swimlane.id ? 'bg-accent/5' : ''} ${dragOverSwimlaneId === swimlane.id ? 'bg-accent/10 ring-1 ring-inset ring-accent/30' : ''}`}
                   style={{ height: `${totalHeight}px` }}
                   onMouseDown={(e) => handleEmptyMouseDown(e, swimlane.id)}
-                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOverSwimlaneId(swimlane.id); }}
+                  onDragLeave={() => setDragOverSwimlaneId(null)}
                   onDrop={(e) => {
                     e.preventDefault();
+                    setDragOverSwimlaneId(null);
                     const activityId = e.dataTransfer.getData('activityId');
                     if (activityId) handleSwimlaneChange(activityId, swimlane.id);
                   }}

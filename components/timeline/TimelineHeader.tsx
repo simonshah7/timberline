@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ZoomLevel = 'year' | 'quarter' | 'month';
+type ZoomLevel = 'year' | 'half' | 'quarter' | 'month';
 
 interface TimelineHeaderProps {
   startDate: Date;
@@ -28,6 +28,37 @@ export function TimelineHeader({ startDate, zoomLevel, dayWidth, totalWidth }: T
           {monthStart.toLocaleDateString('en-US', { month: 'short' })}
         </div>
       );
+    }
+  } else if (zoomLevel === 'half') {
+    for (let i = 0; i < 6; i++) {
+      const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth() + i, 1);
+      const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
+      const width = daysInMonth * dayWidth;
+      headers.push(
+        <div
+          key={`month-${i}`}
+          className="flex-shrink-0 border-r border-card-border text-center text-xs font-medium text-muted-foreground py-2"
+          style={{ width: `${width}px` }}
+        >
+          {monthStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+        </div>
+      );
+      // Show week numbers as sub-headers
+      let d = 1;
+      while (d <= daysInMonth) {
+        const weekEnd = Math.min(d + 6, daysInMonth);
+        const weekWidth = (weekEnd - d + 1) * dayWidth;
+        subHeaders.push(
+          <div
+            key={`week-${i}-${d}`}
+            className="flex-shrink-0 border-r border-card-border/40 text-center text-[10px] text-muted-foreground py-1"
+            style={{ width: `${weekWidth}px` }}
+          >
+            {d}-{weekEnd}
+          </div>
+        );
+        d = weekEnd + 1;
+      }
     }
   } else if (zoomLevel === 'quarter') {
     for (let i = 0; i < 3; i++) {

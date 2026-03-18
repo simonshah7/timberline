@@ -493,7 +493,7 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
     <div className="flex-1 overflow-auto">
       <div className="max-w-[1100px] mx-auto p-4 md:p-6 space-y-5">
         {/* Breadcrumb & Header */}
-        <div className="flex items-center gap-2 text-sm">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm">
           <button
             onClick={onBack}
             className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
@@ -505,7 +505,9 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
           </button>
           <span className="text-muted-foreground/40">/</span>
           <span className="text-foreground font-medium truncate">{event.title}</span>
-        </div>
+          <span className="text-muted-foreground/40">/</span>
+          <span className="text-muted-foreground capitalize">{activeTab === 'sub-events' ? 'Schedule' : activeTab === 'overview' ? 'Overview' : activeTab === 'attendees' ? 'People' : activeTab === 'checklist' ? 'Checklist' : activeTab === 'comparison' ? 'Compare' : 'Actions'}</span>
+        </nav>
 
         {/* Title Section - click to edit */}
         <div className="flex items-start justify-between gap-4">

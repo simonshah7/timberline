@@ -260,14 +260,14 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
                     }
                   }}
                   placeholder="Type a command..."
-                  disabled={isProcessing || isListening}
+                  disabled={isProcessing}
                   className="flex-1 px-3 py-2 text-sm border border-card-border rounded-lg bg-background text-foreground placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-50"
                 />
 
                 {/* Send button */}
                 <button
                   onClick={handleTextSubmit}
-                  disabled={!textInput.trim() || isProcessing || isListening}
+                  disabled={!textInput.trim() || isProcessing}
                   className="flex-shrink-0 p-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
