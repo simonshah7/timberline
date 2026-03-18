@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Activity, Swimlane, Status, Campaign } from '@/db/schema';
-import { addDays, getDaysBetween, getContrastTextColor } from '@/lib/utils';
+import { addDays, getDaysBetween, getContrastTextColor, formatCurrency } from '@/lib/utils';
 import { SwimlaneSidebar } from './SwimlaneSidebar';
 import { useActivityLayout, useTimelineDrag, TimelineHeader, ActivityBar } from './timeline';
 
@@ -336,7 +336,7 @@ export function TimelineView({
   return (
     <div className="flex-1 flex flex-col bg-card overflow-hidden">
       {/* Timeline Controls */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-card-border bg-surface">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-2 sm:px-4 py-2 border-b border-card-border bg-surface">
         <div className="flex items-center gap-1.5">
           <button onClick={navigatePrev} className="p-1.5 rounded hover:bg-muted">
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -389,7 +389,7 @@ export function TimelineView({
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
-            <span>View Settings</span>
+            <span className="hidden sm:inline">View Settings</span>
           </button>
 
           {showSettings && (
