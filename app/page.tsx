@@ -206,7 +206,7 @@ export default function Home() {
     setShowActivityModal(true);
   };
 
-  const handleExport = async (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv') => {
+  const handleExport = async (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv' | 'pptx') => {
     if (exportFormat === 'csv') { exportToCSV(startDate, endDate); return; }
     const elementToCapture = mainContentRef.current;
     if (!elementToCapture) { alert('Unable to export: content not ready'); return; }

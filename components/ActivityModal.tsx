@@ -125,21 +125,6 @@ export function ActivityModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-card rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[95vh] overflow-y-auto border border-card-border">
-        <div className="sticky top-0 bg-card border-b border-card-border px-6 py-3 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold text-foreground">
-            {activity ? 'Edit Activity' : 'Create Activity'}
-          </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-  return (
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -182,6 +167,7 @@ export function ActivityModal({
               </button>
             </div>
 
+          <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
           <div className="grid grid-cols-12 gap-4">
             {/* Title */}
             <div className="col-span-8">
@@ -435,8 +421,10 @@ export function ActivityModal({
               </button>
             </div>
           </div>
-        </form>
-      </div>
-    </div>
+          </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

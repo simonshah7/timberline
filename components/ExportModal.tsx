@@ -89,6 +89,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
                 </button>
               ))}
             </div>
+          </div>
 
           {/* Export Format */}
           <div>
