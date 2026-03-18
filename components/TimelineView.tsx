@@ -71,6 +71,7 @@ export function TimelineView({
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [cardStyle, setCardStyle] = useState<CardStyle>('medium');
   const [visibleFields, setVisibleFields] = useState<string[]>(['status', 'campaign']);
+  const [highContrast, setHighContrast] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
   // --- Refs ---
@@ -200,6 +201,7 @@ export function TimelineView({
         const parsed = JSON.parse(saved);
         if (parsed.cardStyle) setCardStyle(parsed.cardStyle);
         if (parsed.visibleFields) setVisibleFields(parsed.visibleFields);
+        if (parsed.highContrast !== undefined) setHighContrast(parsed.highContrast);
       } catch (e) {
         console.error('Failed to parse timeline settings', e);
       }
@@ -207,8 +209,8 @@ export function TimelineView({
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('timeline_view_settings', JSON.stringify({ cardStyle, visibleFields }));
-  }, [cardStyle, visibleFields]);
+    localStorage.setItem('timeline_view_settings', JSON.stringify({ cardStyle, visibleFields, highContrast }));
+  }, [cardStyle, visibleFields, highContrast]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -397,6 +399,29 @@ export function TimelineView({
               <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Accessibility
+                  </label>
+                  <label className="flex items-center gap-2 px-2 py-1.5 text-[11px] hover:bg-muted rounded-md cursor-pointer transition-colors">
+                    <div className={`w-8 h-4 rounded-full relative transition-colors ${
+                      highContrast ? 'bg-accent' : 'bg-card-border'
+                    }`}>
+                      <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${
+                        highContrast ? 'translate-x-4' : 'translate-x-0.5'
+                      }`} />
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={highContrast}
+                      onChange={(e) => setHighContrast(e.target.checked)}
+                      className="sr-only"
+                      aria-label="Toggle high contrast bars"
+                    />
+                    <span className="text-foreground font-medium">High Contrast Bars</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
                     Card Style
                   </label>
                   <div className="grid grid-cols-3 gap-1 bg-muted p-1 rounded-md">
@@ -551,6 +576,7 @@ export function TimelineView({
                         style={getActivityStyle(activity)}
                         cardStyle={cardStyle}
                         visibleFields={visibleFields}
+                        highContrast={highContrast}
                         onDoubleClick={() => onActivityClick(activity)}
                         onMouseDown={(e) => handleActivityMouseDown(e, activity)}
                         onClone={(e) => handleCloneActivity(e, activity)}
