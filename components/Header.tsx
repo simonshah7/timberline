@@ -112,11 +112,8 @@ export function Header({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-5 min-w-0">
           {/* Logo */}
-          <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-            <img src="/launchgrid-logo.png" alt="LaunchGrid" className="h-12 w-auto" />
-            <h1 className="text-base font-semibold tracking-tight text-foreground hidden sm:block">
-              LaunchGrid
-            </h1>
+          <div className="flex items-center flex-shrink-0">
+            <img src="/launchgrid-logo.png" alt="LaunchGrid" className="h-10 w-auto object-contain" />
           </div>
 
           {/* Divider - hidden on mobile */}
