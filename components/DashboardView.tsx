@@ -165,13 +165,13 @@ function IconCheck({ className }: { className?: string }) {
 
 // ─── KPI Card ───────────────────────────────────────────
 
-const kpiColors: Record<string, { bg: string; text: string }> = {
-  'Total Budget': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
-  'Planned Cost': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
-  'Actual Cost': { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400' },
-  'Budget Utilization': { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
-  'SAOs': { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400' },
-  'Pipeline ROI': { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400' },
+const kpiColors: Record<string, { bg: string; text: string; bgColor: string; textColor: string }> = {
+  'Total Budget': { bg: '', text: '', bgColor: 'rgba(0,97,112,0.1)', textColor: '#006170' },
+  'Planned Cost': { bg: '', text: '', bgColor: 'rgba(59,83,255,0.1)', textColor: '#3B53FF' },
+  'Actual Cost': { bg: '', text: '', bgColor: 'rgba(122,0,193,0.1)', textColor: '#7A00C1' },
+  'Budget Utilization': { bg: '', text: '', bgColor: 'rgba(255,169,67,0.1)', textColor: '#FFA943' },
+  'SAOs': { bg: '', text: '', bgColor: 'rgba(255,113,90,0.1)', textColor: '#FF715A' },
+  'Pipeline ROI': { bg: '', text: '', bgColor: 'rgba(52,229,226,0.1)', textColor: '#34E5E2' },
 };
 
 function KpiCard({
@@ -187,16 +187,19 @@ function KpiCard({
   sub?: string;
   trend?: { label: string; positive: boolean } | null;
 }) {
-  const colors = kpiColors[label] || { bg: 'bg-muted', text: 'text-muted-foreground' };
+  const colors = kpiColors[label] || { bg: 'bg-muted', text: 'text-muted-foreground', bgColor: '', textColor: '' };
   return (
-    <div className="bg-card border border-card-border rounded-lg p-4 flex flex-col gap-1.5 min-w-0">
+    <div className="bg-card border border-card-border rounded-lg p-3 sm:p-4 flex flex-col gap-1 sm:gap-1.5 min-w-0">
       <div className="flex items-center gap-2.5 text-muted-foreground text-xs font-medium uppercase tracking-wide">
-        <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md ${colors.bg} ${colors.text}`}>
+        <span
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md"
+          style={colors.bgColor ? { backgroundColor: colors.bgColor, color: colors.textColor } : undefined}
+        >
           {icon}
         </span>
         <span className="truncate">{label}</span>
       </div>
-      <div className="text-2xl font-bold text-foreground truncate">{value}</div>
+      <div className="text-lg sm:text-2xl font-bold text-foreground truncate">{value}</div>
       {sub && <div className="text-xs text-muted-foreground truncate">{sub}</div>}
       {trend && (
         <div
@@ -464,16 +467,16 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
     }
     const total = Object.values(map).reduce((s, v) => s + v, 0);
     const colors: Record<string, string> = {
-      US: '#8B5CF6',
-      EMEA: '#3B82F6',
-      ROW: '#10B981',
+      US: '#7A00C1',
+      EMEA: '#3B53FF',
+      ROW: '#006170',
     };
     let cumulative = 0;
     const segments = Object.entries(map).map(([region, amount]) => {
       const start = total > 0 ? cumulative / total : 0;
       cumulative += amount;
       const end = total > 0 ? cumulative / total : 0;
-      return { region, amount, pct: total > 0 ? amount / total : 0, start, end, color: colors[region] || '#6B7280' };
+      return { region, amount, pct: total > 0 ? amount / total : 0, start, end, color: colors[region] || '#D6E4EA' };
     });
     return { segments, total };
   }, [activities]);
@@ -487,9 +490,9 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
       'Committed',
     ];
     const defaultColors: Record<string, string> = {
-      Considering: '#3B82F6',
-      Negotiating: '#F59E0B',
-      Committed: '#10B981',
+      Considering: '#3B53FF',
+      Negotiating: '#FFA943',
+      Committed: '#006170',
     };
 
     return statusNames.map((name) => {
@@ -599,7 +602,7 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
   // ── Render ──────────────────────────────────────────
 
   return (
-    <div className="p-4 space-y-6 max-w-[1400px] mx-auto">
+    <div className="p-3 sm:p-4 space-y-4 sm:space-y-6 max-w-[1400px] mx-auto overflow-y-auto">
       {/* Tab Switcher */}
       <div className="flex items-center gap-1 border-b border-card-border pb-0">
         <button
@@ -699,9 +702,9 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
       </div>
 
       {/* Middle row: Budget by Campaign + Region Donut + Status Pipeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Budget by Campaign */}
-        <div className="lg:col-span-2 bg-card border border-card-border rounded-lg p-4">
+        <div className="lg:col-span-2 bg-card border border-card-border rounded-lg p-3 sm:p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">Budget by Campaign</h3>
           <div className="space-y-3">
             {campaignRows.map((row) => (
@@ -826,7 +829,7 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
 
       {/* Campaign Performance Table */}
       <div className="bg-card border border-card-border rounded-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-card-border flex items-center justify-between">
+        <div className="px-3 sm:px-4 py-3 border-b border-card-border flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">Campaign Performance</h3>
           <ColumnToggle visibleColumns={visibleColumns} onToggle={toggleColumn} />
         </div>
