@@ -11,6 +11,7 @@ import { CreateCalendarModal } from '@/components/CreateCalendarModal';
 import { ExportModal } from '@/components/ExportModal';
 import { Calendar, Status, Swimlane, Campaign, Activity } from '@/db/schema';
 import * as htmlToImage from 'html-to-image';
+import PptxGenJS from 'pptxgenjs';
 
 type ViewType = 'timeline' | 'calendar' | 'table';
 
@@ -259,9 +260,14 @@ export default function Home() {
     setShowActivityModal(true);
   };
 
-  const handleExport = async (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv') => {
+  const handleExport = async (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv' | 'pptx') => {
     if (exportFormat === 'csv') {
       exportToCSV(startDate, endDate);
+      return;
+    }
+
+    if (exportFormat === 'pptx') {
+      exportToPPTX(startDate, endDate, exportType);
       return;
     }
 
@@ -360,6 +366,163 @@ export default function Home() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const exportToPPTX = (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table') => {
+    if (!currentCalendar) return;
+
+    const activitiesToExport = filteredActivities.filter(a => {
+      return a.startDate <= endDate && a.endDate >= startDate;
+    });
+
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    pptx.author = 'CampaignOS';
+    pptx.title = `${currentCalendar.name} - ${exportType.charAt(0).toUpperCase() + exportType.slice(1)} Export`;
+
+    // Title slide
+    const titleSlide = pptx.addSlide();
+    titleSlide.addText(currentCalendar.name, {
+      x: 0.5,
+      y: 1.5,
+      w: '90%',
+      fontSize: 36,
+      fontFace: 'Arial',
+      color: '1e40af',
+      bold: true,
+    });
+    titleSlide.addText(`${exportType.charAt(0).toUpperCase() + exportType.slice(1)} Export`, {
+      x: 0.5,
+      y: 2.5,
+      w: '90%',
+      fontSize: 20,
+      fontFace: 'Arial',
+      color: '6b7280',
+    });
+    titleSlide.addText(`${startDate} to ${endDate}`, {
+      x: 0.5,
+      y: 3.2,
+      w: '90%',
+      fontSize: 14,
+      fontFace: 'Arial',
+      color: '9ca3af',
+    });
+    titleSlide.addText(`${activitiesToExport.length} activities`, {
+      x: 0.5,
+      y: 3.8,
+      w: '90%',
+      fontSize: 14,
+      fontFace: 'Arial',
+      color: '9ca3af',
+    });
+
+    // Table slide with activities data
+    if (activitiesToExport.length > 0) {
+      const headers = ['Title', 'Start Date', 'End Date', 'Status', 'Swimlane', 'Campaign', 'Cost'];
+      const headerRow = headers.map(h => ({
+        text: h,
+        options: { bold: true, color: 'ffffff', fill: { color: '1e40af' }, fontSize: 10, fontFace: 'Arial' as const },
+      }));
+
+      // Split into chunks of ~15 rows per slide for readability
+      const chunkSize = 15;
+      for (let i = 0; i < activitiesToExport.length; i += chunkSize) {
+        const chunk = activitiesToExport.slice(i, i + chunkSize);
+        const slide = pptx.addSlide();
+
+        slide.addText(`Activities (${i + 1}-${Math.min(i + chunkSize, activitiesToExport.length)} of ${activitiesToExport.length})`, {
+          x: 0.5,
+          y: 0.2,
+          w: '90%',
+          fontSize: 14,
+          fontFace: 'Arial',
+          color: '374151',
+          bold: true,
+        });
+
+        const dataRows = chunk.map((a, rowIdx) => {
+          const status = currentCalendar.statuses.find(s => s.id === a.statusId)?.name || '';
+          const swimlane = currentCalendar.swimlanes.find(s => s.id === a.swimlaneId)?.name || '';
+          const campaign = currentCalendar.campaigns.find(c => c.id === a.campaignId)?.name || 'N/A';
+          const fillColor = rowIdx % 2 === 0 ? 'f9fafb' : 'ffffff';
+
+          return [
+            { text: a.title || '', options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+            { text: a.startDate || '', options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+            { text: a.endDate || '', options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+            { text: status, options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+            { text: swimlane, options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+            { text: campaign, options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+            { text: `${a.currency || 'US$'}${a.cost || '0'}`, options: { fontSize: 9, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+          ];
+        });
+
+        slide.addTable([headerRow, ...dataRows], {
+          x: 0.3,
+          y: 0.7,
+          w: 12.5,
+          colW: [3.0, 1.4, 1.4, 1.5, 1.8, 1.8, 1.6],
+          border: { type: 'solid', pt: 0.5, color: 'e5e7eb' },
+          rowH: 0.35,
+          autoPage: false,
+        });
+      }
+    }
+
+    // Summary slide grouped by swimlane
+    const summarySlide = pptx.addSlide();
+    summarySlide.addText('Summary by Swimlane', {
+      x: 0.5,
+      y: 0.3,
+      w: '90%',
+      fontSize: 20,
+      fontFace: 'Arial',
+      color: '1e40af',
+      bold: true,
+    });
+
+    const swimlaneSummary = currentCalendar.swimlanes.map(sl => {
+      const slActivities = activitiesToExport.filter(a => a.swimlaneId === sl.id);
+      const totalCost = slActivities.reduce((sum, a) => sum + Number(a.cost || 0), 0);
+      return { name: sl.name, count: slActivities.length, totalCost };
+    }).filter(s => s.count > 0);
+
+    const summaryHeader = [
+      { text: 'Swimlane', options: { bold: true, color: 'ffffff', fill: { color: '1e40af' }, fontSize: 11, fontFace: 'Arial' as const } },
+      { text: 'Activities', options: { bold: true, color: 'ffffff', fill: { color: '1e40af' }, fontSize: 11, fontFace: 'Arial' as const } },
+      { text: 'Total Cost', options: { bold: true, color: 'ffffff', fill: { color: '1e40af' }, fontSize: 11, fontFace: 'Arial' as const } },
+    ];
+
+    const summaryRows = swimlaneSummary.map((s, idx) => {
+      const fillColor = idx % 2 === 0 ? 'f9fafb' : 'ffffff';
+      return [
+        { text: s.name, options: { fontSize: 11, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+        { text: String(s.count), options: { fontSize: 11, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+        { text: `$${s.totalCost.toLocaleString()}`, options: { fontSize: 11, fontFace: 'Arial' as const, fill: { color: fillColor } } },
+      ];
+    });
+
+    if (summaryRows.length > 0) {
+      summarySlide.addTable([summaryHeader, ...summaryRows], {
+        x: 0.5,
+        y: 1.0,
+        w: 8,
+        colW: [4, 2, 2],
+        border: { type: 'solid', pt: 0.5, color: 'e5e7eb' },
+        rowH: 0.45,
+      });
+    } else {
+      summarySlide.addText('No activities in the selected date range.', {
+        x: 0.5,
+        y: 1.5,
+        w: '90%',
+        fontSize: 14,
+        fontFace: 'Arial',
+        color: '6b7280',
+      });
+    }
+
+    pptx.writeFile({ fileName: `campaignos-${exportType}-export-${startDate}-to-${endDate}.pptx` });
   };
 
   // Filter activities

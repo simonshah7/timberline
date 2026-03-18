@@ -5,7 +5,7 @@ import { useState } from 'react';
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExport: (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv') => void;
+  onExport: (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv' | 'pptx') => void;
   currentView: 'timeline' | 'calendar' | 'table';
 }
 
@@ -17,7 +17,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
   const [startDate, setStartDate] = useState(firstOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(lastOfMonth.toISOString().split('T')[0]);
   const [exportType, setExportType] = useState<'timeline' | 'calendar' | 'table'>(currentView);
-  const [exportFormat, setExportFormat] = useState<'png' | 'csv'>('png');
+  const [exportFormat, setExportFormat] = useState<'png' | 'csv' | 'pptx'>('png');
 
   if (!isOpen) return null;
 
@@ -58,7 +58,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
   // When export type changes to something other than table, reset format to png
   const handleTypeChange = (type: 'timeline' | 'calendar' | 'table') => {
     setExportType(type);
-    if (type !== 'table' && exportFormat === 'csv') {
+    if (type !== 'table' && (exportFormat === 'csv')) {
       setExportFormat('png');
     }
   };
@@ -120,8 +120,17 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
               >
                 CSV Spreadsheet
               </button>
+              <button
+                onClick={() => setExportFormat('pptx')}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${exportFormat === 'pptx'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+              >
+                PowerPoint
+              </button>
             </div>
-            {exportType !== 'table' && (
+            {exportType !== 'table' && exportFormat === 'csv' && (
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 CSV export is only available for Table view.
               </p>
@@ -199,7 +208,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
             onClick={handleExport}
             className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Export {exportFormat.toUpperCase()}
+            Export {exportFormat === 'pptx' ? 'PowerPoint' : exportFormat.toUpperCase()}
           </button>
         </div>
       </div>
