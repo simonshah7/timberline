@@ -518,6 +518,67 @@ function ColumnToggle({
 
 // ─── Main Component ─────────────────────────────────────
 
+// ─── AI Insight Card ────────────────────────────────────
+
+interface Insight {
+  type: 'warning' | 'opportunity' | 'success';
+  title: string;
+  description: string;
+  metric?: string;
+}
+
+function InsightCard({ insight, onDismiss }: { insight: Insight; onDismiss: () => void }) {
+  const styles = {
+    warning: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', icon: 'text-amber-500', badge: 'bg-amber-500/20 text-amber-400' },
+    opportunity: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', icon: 'text-blue-500', badge: 'bg-blue-500/20 text-blue-400' },
+    success: { bg: 'bg-green-500/10', border: 'border-green-500/30', icon: 'text-green-500', badge: 'bg-green-500/20 text-green-400' },
+  };
+  const s = styles[insight.type];
+  return (
+    <div className={`${s.bg} border ${s.border} rounded-lg p-3 flex items-start gap-3 group`}>
+      <span className={`flex-shrink-0 mt-0.5 ${s.icon}`}>
+        {insight.type === 'warning' ? <IconAlertTriangle className="w-4 h-4" /> : insight.type === 'success' ? (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" strokeWidth="1.5"/><path d="M5.5 8l1.5 1.5 3-3.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        ) : (
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" strokeWidth="1.5"/><path d="M8 5v3l2.5 1.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        )}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-xs font-semibold text-foreground">{insight.title}</span>
+          {insight.metric && (
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${s.badge}`}>{insight.metric}</span>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">{insight.description}</p>
+      </div>
+      <button onClick={onDismiss} className="flex-shrink-0 text-muted-foreground/50 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 14 14"><path d="M4 4l6 6M10 4l-6 6" strokeWidth="1.5" strokeLinecap="round"/></svg>
+      </button>
+    </div>
+  );
+}
+
+// ─── Sparkline for KPI cards ────────────────────────────
+
+function KpiSparkline({ data, color, height = 28 }: { data: number[]; color: string; height?: number }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const w = 64;
+  const points = data
+    .map((v, i) => `${(i / (data.length - 1)) * w},${height - ((v - min) / range) * (height - 4) - 2}`)
+    .join(' ');
+  const lastY = height - ((data[data.length - 1] - min) / range) * (height - 4) - 2;
+  return (
+    <svg width={w} height={height} className="inline-block">
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+      <circle cx={w} cy={lastY} r="2" fill={color} />
+    </svg>
+  );
+}
+
 export function DashboardView({ activities, campaigns, swimlanes, statuses, calendarId }: DashboardViewProps) {
   const [dashboardTab, setDashboardTab] = useState<DashboardTab>('overview');
   const [sortField, setSortField] = useState<SortField>('name');
