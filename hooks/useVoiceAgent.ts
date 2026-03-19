@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-type ViewType = 'timeline' | 'calendar' | 'table' | 'dashboard';
+type ViewType = 'timeline' | 'calendar' | 'table' | 'dashboard' | 'events' | 'reports';
 
 export interface VoiceAgentCallbacks {
   onCreateActivity: (data: {
