@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { CampaignReportingDashboard } from './CampaignReportingDashboard';
+import { CampaignDetailReport } from './CampaignDetailReport';
 import { EventComparisonView } from './EventComparisonView';
 import { generateCampaignPerformanceDeck } from '@/lib/pptx/campaignDeck';
 import { generateBudgetReviewDeck } from '@/lib/pptx/budgetDeck';
@@ -11,6 +12,7 @@ import {
   SolarGraphUpLinear,
   SolarDollarCircle,
   SolarUsersGroupRounded,
+  SolarTargetLinear,
   SolarDownloadLinear,
   SolarChartLinear,
   SolarAltArrowDown,
@@ -20,7 +22,7 @@ interface ReportsViewProps {
   calendarId?: string;
 }
 
-type ReportSection = 'hub' | 'campaign-performance' | 'budget-review' | 'event-roi';
+type ReportSection = 'hub' | 'campaign-performance' | 'campaign-detail' | 'budget-review' | 'event-roi';
 
 export function ReportsView({ calendarId }: ReportsViewProps) {
   const [section, setSection] = useState<ReportSection>('hub');
@@ -113,6 +115,21 @@ export function ReportsView({ calendarId }: ReportsViewProps) {
     );
   }
 
+  if (section === 'campaign-detail') {
+    return (
+      <div className="p-3 sm:p-4 max-w-[1400px] mx-auto overflow-y-auto space-y-4">
+        <button
+          onClick={() => setSection('hub')}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <SolarAltArrowDown className="w-3 h-3 rotate-90" />
+          Back to Reports
+        </button>
+        <CampaignDetailReport calendarId={calendarId} />
+      </div>
+    );
+  }
+
   if (section === 'event-roi') {
     return (
       <div className="p-3 sm:p-4 max-w-[1400px] mx-auto overflow-y-auto space-y-4">
@@ -138,6 +155,15 @@ export function ReportsView({ calendarId }: ReportsViewProps) {
       color: '#7A00C1',
       onExport: handleExportCampaignDeck,
       exporting: exportingCampaign,
+    },
+    {
+      key: 'campaign-detail' as ReportSection,
+      title: 'Campaign Detail',
+      description: 'Deep-dive into a single campaign: budget utilization, activity breakdown, funnel metrics, linked events, regional spend, and source-level data — all for one campaign at a time.',
+      icon: <SolarTargetLinear className="w-6 h-6" />,
+      color: '#E24650',
+      onExport: null,
+      exporting: false,
     },
     {
       key: 'budget-review' as ReportSection,
@@ -173,7 +199,7 @@ export function ReportsView({ calendarId }: ReportsViewProps) {
       </div>
 
       {/* Report Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {reports.map((report, i) => (
           <motion.div
             key={report.key}
