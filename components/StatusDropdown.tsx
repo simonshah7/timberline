@@ -272,14 +272,10 @@ export function StatusDropdown({
                                             }}
                                         />
                                         <button type="button" onClick={handleCreate} disabled={isSubmitting} className="p-1.5 bg-accent text-white rounded-md hover:bg-accent-hover disabled:opacity-50 transition-colors">
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
+                                            <SolarCheckLinear className="w-3.5 h-3.5" />
                                         </button>
                                         <button type="button" onClick={() => { setIsAdding(false); setNewName(''); }} className="p-1.5 bg-muted text-muted-foreground rounded-md hover:bg-card-hover transition-colors">
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
+                                            <SolarCloseLinear className="w-3.5 h-3.5" />
                                         </button>
                                     </div>
                                     <div className="flex gap-1 px-1">
@@ -300,9 +296,7 @@ export function StatusDropdown({
                                     onClick={() => setIsAdding(true)}
                                     className="w-full flex items-center gap-2 px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
                                 >
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
+                                    <SolarAddLinear className="w-3.5 h-3.5" />
                                     New Status
                                 </button>
                             )}

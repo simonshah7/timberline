@@ -609,9 +609,7 @@ export function TableView({
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 rounded-md transition-colors"
             >
               Change Campaign
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-              </svg>
+              <SolarAltArrowDown className="w-3 h-3" />
             </button>
             {bulkCampaignOpen && (
               <div className="absolute left-0 top-full mt-1 w-48 bg-card border border-card-border rounded-lg shadow-lg z-50 overflow-hidden">
@@ -733,9 +731,7 @@ export function TableView({
 
       {activities.length === 0 && (
         <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <svg className="w-10 h-10 text-muted-foreground/30" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-          </svg>
+          <SolarBoxLinear className="w-10 h-10 text-muted-foreground/30" />
           <p className="text-sm font-medium text-muted-foreground">No activities found</p>
           <p className="text-xs text-muted-foreground/70 max-w-xs text-center">
             Create your first activity using the &quot;New Activity&quot; button in the header, or switch to Timeline view and drag to create one.

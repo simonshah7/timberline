@@ -1126,7 +1126,7 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
                           onClick={() => handleToggleChecklist(item.id, item.isDone)}
                           className={`w-5 h-5 rounded-md border flex-shrink-0 flex items-center justify-center transition-colors ${item.isDone ? 'bg-green-500 border-green-500 text-white' : 'border-card-border hover:border-accent/40'}`}
                         >
-                          {item.isDone && <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
+                          {item.isDone && <SolarCheckLinear className="w-3 h-3" />}
                         </button>
                         <span className={`text-sm flex-1 ${item.isDone ? 'line-through text-muted-foreground/50' : 'text-foreground'}`}>{item.title}</span>
                         {item.dueDate && <span className="text-[10px] text-muted-foreground">{formatDate(item.dueDate)}</span>}
@@ -1149,7 +1149,7 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
                         onClick={() => handleToggleChecklist(item.id, item.isDone)}
                         className={`w-5 h-5 rounded-md border flex-shrink-0 flex items-center justify-center transition-colors ${item.isDone ? 'bg-green-500 border-green-500 text-white' : 'border-card-border hover:border-accent/40'}`}
                       >
-                        {item.isDone && <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
+                        {item.isDone && <SolarCheckLinear className="w-3 h-3" />}
                       </button>
                       <span className={`text-sm flex-1 ${item.isDone ? 'line-through text-muted-foreground/50' : 'text-foreground'}`}>{item.title}</span>
                       <button onClick={() => handleDeleteChecklistItem(item.id)} className="p-0.5 rounded text-muted-foreground/30 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
@@ -1163,9 +1163,7 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
 
             {checklistTotal === 0 && (
               <div className="text-center py-12 bg-card border border-card-border rounded-xl">
-                <svg className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <SolarCheckCircle className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No checklist items yet</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">Track readiness with logistics, materials, and comms checklists</p>
               </div>
@@ -1224,9 +1222,7 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
               </div>
             ) : (
               <div className="text-center py-12 bg-card border border-card-border rounded-xl">
-                <svg className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                </svg>
+                <SolarChartLinear className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No prior event linked</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">Link a prior event in the Overview tab to enable YoY comparison</p>
               </div>
@@ -1241,9 +1237,7 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
             <div className="bg-card border border-card-border rounded-xl p-5">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                  </svg>
+                  <SolarDownloadLinear className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-1">Logistics Deck</h3>
