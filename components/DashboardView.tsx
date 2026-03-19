@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Campaign, Swimlane, Status } from '@/db/schema';
 import { formatCurrency } from '@/lib/utils';
 import { EventComparisonView } from './EventComparisonView';
 import { CampaignReportingDashboard } from './CampaignReportingDashboard';
+import { generateBudgetReviewDeck } from '@/lib/pptx/budgetDeck';
+import type { InsightItem } from '@/lib/pptx/shared';
 import {
   SolarDollarCircle,
   SolarClipboardLinear,
@@ -23,6 +25,7 @@ import {
   SolarInfoCircle,
   SolarCloseLinear,
   SolarCheckCircle,
+  SolarDownloadLinear,
 } from './SolarIcons';
 
 interface DashboardViewProps {
@@ -482,6 +485,41 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
   const [dashboardTab, setDashboardTab] = useState<DashboardTab>('overview');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [exportingBudget, setExportingBudget] = useState(false);
+
+  const handleExportBudgetDeck = useCallback(async () => {
+    if (!calendarId) return;
+    setExportingBudget(true);
+    try {
+      const res = await fetch(`/api/reports/budget-review?calendarId=${calendarId}`);
+      if (!res.ok) throw new Error('Failed to fetch budget data');
+      const data = await res.json();
+
+      let insights: InsightItem[] = [];
+      try {
+        const insightRes = await fetch(`/api/ai/budget-insights?calendarId=${calendarId}`);
+        if (insightRes.ok) {
+          const insightData = await insightRes.json();
+          insights = (insightData.insights || []).map((i: { type: string; title: string; description: string }) => ({
+            type: i.type,
+            title: i.title,
+            description: i.description,
+            priority: 'medium',
+          }));
+        }
+      } catch {
+        // Continue without insights
+      }
+
+      const now = new Date();
+      const periodLabel = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      await generateBudgetReviewDeck(data, insights, periodLabel);
+    } catch (error) {
+      console.error('Error generating budget deck:', error);
+      alert('Failed to generate budget review deck');
+    }
+    setExportingBudget(false);
+  }, [calendarId]);
   const [visibleColumns, setVisibleColumns] = useState<Set<SortField>>(
     () => new Set(ALL_COLUMNS.map((c) => c.field)),
   );
@@ -898,16 +936,26 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="space-y-4 sm:space-y-6"
           >
-            {/* KPI summary explanation */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
-              <SolarInfoCircle className="w-4 h-4 flex-shrink-0" />
-              <span>
-                <strong>Budget</strong> = sum of campaign budgets.{' '}
-                <strong>Planned</strong> = total estimated costs across activities.{' '}
-                <strong>Actual</strong> = what you&apos;ve actually spent.{' '}
-                <strong>SAOs</strong> = Sales Accepted Opportunities.{' '}
-                <strong>Pipeline ROI</strong> = pipeline value divided by actual spend.
-              </span>
+            {/* KPI summary explanation + Export button */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg flex-1">
+                <SolarInfoCircle className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  <strong>Budget</strong> = sum of campaign budgets.{' '}
+                  <strong>Planned</strong> = total estimated costs across activities.{' '}
+                  <strong>Actual</strong> = what you&apos;ve actually spent.{' '}
+                  <strong>SAOs</strong> = Sales Accepted Opportunities.{' '}
+                  <strong>Pipeline ROI</strong> = pipeline value divided by actual spend.
+                </span>
+              </div>
+              <button
+                onClick={handleExportBudgetDeck}
+                disabled={exportingBudget || !calendarId}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-accent-purple-btn rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex-shrink-0"
+              >
+                <SolarDownloadLinear className="w-4 h-4" />
+                {exportingBudget ? 'Generating...' : 'Export Budget Review'}
+              </button>
             </div>
 
             {/* KPI Cards with staggered entrance */}
