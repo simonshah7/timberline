@@ -51,19 +51,19 @@ export async function GET(request: Request) {
 
     // Overall summary
     const totalBudget =
-      campaignRows.reduce((s, c) => s + num(c.budget), 0) +
-      swimlaneRows.reduce((s, sw) => s + num(sw.budget), 0);
-    const totalPlanned = activityRows.reduce((s, a) => s + num(a.cost), 0);
-    const totalActual = activityRows.reduce((s, a) => s + num(a.actualCost), 0);
-    const totalPipeline = activityRows.reduce((s, a) => s + num(a.pipelineGenerated), 0);
+      campaignRows.reduce((s: number, c) => s + num(c.budget), 0) +
+      swimlaneRows.reduce((s: number, sw) => s + num(sw.budget), 0);
+    const totalPlanned = activityRows.reduce((s: number, a) => s + num(a.cost), 0);
+    const totalActual = activityRows.reduce((s: number, a) => s + num(a.actualCost), 0);
+    const totalPipeline = activityRows.reduce((s: number, a) => s + num(a.pipelineGenerated), 0);
 
     // By swimlane
     const bySwimlane = swimlaneRows.map((sw) => {
       const acts = activityRows.filter((a) => a.swimlaneId === sw.id);
-      const planned = acts.reduce((s, a) => s + num(a.cost), 0);
-      const actual = acts.reduce((s, a) => s + num(a.actualCost), 0);
-      const pipeline = acts.reduce((s, a) => s + num(a.pipelineGenerated), 0);
-      const saos = acts.reduce((s, a) => s + num(a.actualSaos), 0);
+      const planned = acts.reduce((s: number, a) => s + num(a.cost), 0);
+      const actual = acts.reduce((s: number, a) => s + num(a.actualCost), 0);
+      const pipeline = acts.reduce((s: number, a) => s + num(a.pipelineGenerated), 0);
+      const saos = acts.reduce((s: number, a) => s + num(a.actualSaos), 0);
       const budget = num(sw.budget);
       return {
         name: sw.name,
@@ -82,10 +82,10 @@ export async function GET(request: Request) {
     // By campaign
     const byCampaign = campaignRows.map((c) => {
       const acts = activityRows.filter((a) => a.campaignId === c.id);
-      const planned = acts.reduce((s, a) => s + num(a.cost), 0);
-      const actual = acts.reduce((s, a) => s + num(a.actualCost), 0);
-      const pipeline = acts.reduce((s, a) => s + num(a.pipelineGenerated), 0);
-      const saos = acts.reduce((s, a) => s + num(a.actualSaos), 0);
+      const planned = acts.reduce((s: number, a) => s + num(a.cost), 0);
+      const actual = acts.reduce((s: number, a) => s + num(a.actualCost), 0);
+      const pipeline = acts.reduce((s: number, a) => s + num(a.pipelineGenerated), 0);
+      const saos = acts.reduce((s: number, a) => s + num(a.actualSaos), 0);
       const budget = num(c.budget);
       return {
         name: c.name,
