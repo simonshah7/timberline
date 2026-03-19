@@ -133,7 +133,7 @@ export function Header({
             <img
               src={isDark ? '/launchgridlogodark.png' : '/launchgridlogolight.png'}
               alt="LaunchGrid"
-              className="h-8 sm:h-9 w-auto object-contain"
+              className="h-12 sm:h-14 w-auto object-contain"
             />
           </div>
 
