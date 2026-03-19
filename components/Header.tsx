@@ -180,49 +180,22 @@ export function Header({
 
         {/* Desktop Actions - hidden on mobile */}
         <div className="hidden lg:flex items-center gap-2">
-          {onSeedData && <SeedDataMenu onAction={onSeedData} isLoading={isSeedingData} />}
-
-          <ThemeToggle />
-
-          {onOpenBriefGenerator && (
-            <button
-              onClick={onOpenBriefGenerator}
+          {/* AI Dropdown — combines AI Brief + Copilot */}
+          {(onOpenBriefGenerator || onToggleCopilot) && (
+            <AIMenu
+              onOpenBriefGenerator={onOpenBriefGenerator}
+              onToggleCopilot={onToggleCopilot}
               disabled={!currentCalendar}
-              className="px-3 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-              title="AI Brief: Describe your campaign goal and let AI generate a set of activities for you"
-            >
-              <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              AI Brief
-            </button>
+            />
           )}
 
-          {onToggleCopilot && (
-            <button
-              onClick={onToggleCopilot}
-              disabled={!currentCalendar}
-              className="px-3 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-              title="Copilot: Ask questions about budgets, ROI, and campaign performance in natural language"
-            >
-              <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-              Copilot
-            </button>
-          )}
-
-          <button
-            onClick={onExport}
+          {/* More menu — Data, Export, Theme */}
+          <MoreMenu
+            onExport={onExport}
+            onSeedData={onSeedData}
+            isSeedingData={isSeedingData}
             disabled={!currentCalendar}
-            aria-label="Export"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:text-foreground hover:bg-card-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
-            Export
-          </button>
+          />
 
           <button
             onClick={onCreateActivity}
@@ -291,16 +264,12 @@ export function Header({
               </div>
 
               {/* Action buttons */}
-              <div className="grid grid-cols-2 gap-2">
-                {onSeedData && (
-                  <SeedDataMenu onAction={(action) => { onSeedData(action); setMobileMenuOpen(false); }} isLoading={isSeedingData} />
-                )}
-
+              <div className="space-y-1">
                 {onOpenBriefGenerator && (
                   <button
                     onClick={() => { onOpenBriefGenerator(); setMobileMenuOpen(false); }}
                     disabled={!currentCalendar}
-                    className="px-3 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:opacity-80 transition-opacity disabled:opacity-50 flex items-center gap-1.5 justify-center"
+                    className="w-full px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2.5"
                   >
                     <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -308,12 +277,11 @@ export function Header({
                     AI Brief
                   </button>
                 )}
-
                 {onToggleCopilot && (
                   <button
                     onClick={() => { onToggleCopilot(); setMobileMenuOpen(false); }}
                     disabled={!currentCalendar}
-                    className="px-3 py-2 text-sm font-medium text-foreground bg-muted rounded-lg hover:opacity-80 transition-opacity disabled:opacity-50 flex items-center gap-1.5 justify-center"
+                    className="w-full px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2.5"
                   >
                     <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
@@ -321,23 +289,230 @@ export function Header({
                     Copilot
                   </button>
                 )}
-
                 <button
                   onClick={() => { onExport(); setMobileMenuOpen(false); }}
                   disabled={!currentCalendar}
-                  className="flex items-center gap-1.5 justify-center px-3 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:text-foreground transition-colors disabled:opacity-40"
+                  className="w-full px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted rounded-lg transition-colors disabled:opacity-40 flex items-center gap-2.5"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                   </svg>
                   Export
                 </button>
+                <div className="border-t border-card-border my-1" />
+                {onSeedData && (
+                  <SeedDataMenu onAction={(action) => { onSeedData(action); setMobileMenuOpen(false); }} isLoading={isSeedingData} />
+                )}
+                <div className="flex items-center justify-between px-3 py-2">
+                  <span className="text-sm text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </header>
+  );
+}
+
+// ─── AI Dropdown (Brief + Copilot) ──────────────────────────
+function AIMenu({
+  onOpenBriefGenerator,
+  onToggleCopilot,
+  disabled,
+}: {
+  onOpenBriefGenerator?: () => void;
+  onToggleCopilot?: () => void;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        disabled={disabled}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-foreground bg-muted rounded-lg hover:bg-card-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        title="AI Tools"
+      >
+        <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+        </svg>
+        AI
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-1.5 w-64 bg-card border border-card-border rounded-xl shadow-xl z-50 overflow-hidden"
+          >
+            {onOpenBriefGenerator && (
+              <button
+                onClick={() => { setOpen(false); onOpenBriefGenerator(); }}
+                className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="mt-0.5">
+                  <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">AI Brief</p>
+                  <p className="text-xs text-muted-foreground">Generate activities from a campaign goal</p>
+                </div>
+              </button>
+            )}
+            {onToggleCopilot && (
+              <button
+                onClick={() => { setOpen(false); onToggleCopilot(); }}
+                className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className="mt-0.5">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Copilot</p>
+                  <p className="text-xs text-muted-foreground">Ask about budgets, ROI & performance</p>
+                </div>
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── More Menu (Export, Data, Theme) ────────────────────────
+function MoreMenu({
+  onExport,
+  onSeedData,
+  isSeedingData,
+  disabled,
+}: {
+  onExport: () => void;
+  onSeedData?: (action: 'seed' | 'reset' | 'clear') => void;
+  isSeedingData?: boolean;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-center w-8 h-8 text-muted-foreground bg-muted rounded-lg hover:text-foreground hover:bg-card-hover transition-colors"
+        title="More options"
+        aria-label="More options"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full mt-1.5 w-64 bg-card border border-card-border rounded-xl shadow-xl z-50 overflow-hidden"
+          >
+            {/* Export */}
+            <button
+              onClick={() => { setOpen(false); onExport(); }}
+              disabled={disabled}
+              className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left disabled:opacity-40"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              <span className="text-sm font-medium text-foreground">Export</span>
+            </button>
+
+            {/* Theme */}
+            <div className="flex items-center justify-between px-3 py-2.5 hover:bg-muted/50 transition-colors">
+              <div className="flex items-center gap-3">
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+                </svg>
+                <span className="text-sm font-medium text-foreground">Theme</span>
+              </div>
+              <ThemeToggle />
+            </div>
+
+            {/* Data section */}
+            {onSeedData && (
+              <>
+                <div className="border-t border-card-border" />
+                <div className="px-3 py-2 border-b border-card-border">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Demo Data</p>
+                </div>
+                <button
+                  onClick={() => { setOpen(false); onSeedData('seed'); }}
+                  disabled={isSeedingData}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V8.25a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                  </svg>
+                  <span className="text-sm font-medium text-foreground">Seed Sample Data</span>
+                </button>
+                <button
+                  onClick={() => { setOpen(false); onSeedData('reset'); }}
+                  disabled={isSeedingData}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182" />
+                  </svg>
+                  <span className="text-sm font-medium text-foreground">Reset Data</span>
+                </button>
+                <button
+                  onClick={() => { setOpen(false); onSeedData('clear'); }}
+                  disabled={isSeedingData}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/50 transition-colors text-left disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                  <span className="text-sm font-medium text-foreground">Clear All Data</span>
+                </button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
