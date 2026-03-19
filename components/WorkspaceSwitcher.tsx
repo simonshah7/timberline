@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar } from '@/db/schema';
+import { SolarAltArrowDown, SolarAddLinear } from './SolarIcons';
 
 interface WorkspaceSwitcherProps {
   calendars: Calendar[];
@@ -39,15 +40,7 @@ export function WorkspaceSwitcher({
         <span className="font-medium text-foreground">
           {currentCalendar?.name || 'Select Workspace'}
         </span>
-        <svg
-          className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
+        <SolarAltArrowDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>
@@ -85,9 +78,7 @@ export function WorkspaceSwitcher({
                 onClick={() => { onCreateNew(); setIsOpen(false); }}
                 className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-accent hover:bg-accent-soft transition-colors font-medium"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
+                <SolarAddLinear className="w-4 h-4" />
                 New Workspace
               </button>
             </div>

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SolarCheckLinear, SolarCloseLinear, SolarInfoCircle } from './SolarIcons';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -30,21 +31,9 @@ const accentColors: Record<ToastType, { border: string; icon: string; bg: string
 };
 
 const icons: Record<ToastType, React.ReactNode> = {
-  success: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  ),
-  error: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  ),
-  info: (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-    </svg>
-  ),
+  success: <SolarCheckLinear className="w-5 h-5" />,
+  error: <SolarCloseLinear className="w-5 h-5" />,
+  info: <SolarInfoCircle className="w-5 h-5" />,
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
