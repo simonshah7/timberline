@@ -5,7 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '@/lib/utils';
 import type { CampaignReportData } from '@/db/schema';
 import dynamic from 'next/dynamic';
-import { SolarAltArrowDown } from './SolarIcons';
+import { SolarAltArrowDown, SolarDownloadLinear } from './SolarIcons';
+import { generateCampaignPerformanceDeck } from '@/lib/pptx/campaignDeck';
+import type { InsightItem } from '@/lib/pptx/shared';
 
 const WorldMapChart = dynamic(() => import('./WorldMapChart'), { ssr: false });
 
@@ -686,6 +688,37 @@ export function CampaignReportingDashboard({ calendarId }: CampaignReportingDash
     return Math.min(100, score);
   }, [data, bySource]);
 
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportDeck = useCallback(async () => {
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/reports/campaign-performance?calendarId=${calendarId}`);
+      if (!res.ok) throw new Error('Failed to fetch report data');
+      const reportData = await res.json();
+
+      // Fetch AI insights
+      let insights: InsightItem[] = [];
+      try {
+        const insightRes = await fetch(`/api/ai/campaign-insights?calendarId=${calendarId}`);
+        if (insightRes.ok) {
+          const insightData = await insightRes.json();
+          insights = insightData.insights || [];
+        }
+      } catch {
+        // Continue without insights
+      }
+
+      const now = new Date();
+      const periodLabel = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      await generateCampaignPerformanceDeck(reportData, insights, periodLabel);
+    } catch (error) {
+      console.error('Error generating campaign deck:', error);
+      alert('Failed to generate campaign performance deck');
+    }
+    setExporting(false);
+  }, [calendarId]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground text-sm">
@@ -718,6 +751,19 @@ export function CampaignReportingDashboard({ calendarId }: CampaignReportingDash
 
   return (
     <div className="space-y-4">
+      {/* Header with Export */}
+      <div className="flex items-center justify-between">
+        <div />
+        <button
+          onClick={handleExportDeck}
+          disabled={exporting}
+          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-medium text-white bg-accent-purple-btn rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          <SolarDownloadLinear className="w-4 h-4" />
+          {exporting ? 'Generating...' : 'Export Performance Deck'}
+        </button>
+      </div>
+
       {/* AI Insights Panel */}
       <AIInsightsPanel calendarId={calendarId} />
 

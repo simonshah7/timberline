@@ -1,16 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { generateCampaignPerformanceDeck } from '@/lib/pptx/campaignDeck';
+import { generateBudgetReviewDeck } from '@/lib/pptx/budgetDeck';
+import type { InsightItem } from '@/lib/pptx/shared';
 
 interface ExportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExport: (startDate: string, endDate: string, exportType: 'timeline' | 'calendar' | 'table', exportFormat: 'png' | 'csv') => void;
   currentView: string;
+  calendarId?: string;
 }
 
-export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportModalProps) {
+type ExportFormat = 'png' | 'csv' | 'pptx';
+type PptxReportType = 'campaign-performance' | 'budget-review';
+
+export function ExportModal({ isOpen, onClose, onExport, currentView, calendarId }: ExportModalProps) {
   const today = new Date();
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -22,7 +28,9 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
       ? currentView
       : 'timeline'
   );
-  const [exportFormat, setExportFormat] = useState<'png' | 'csv'>('png');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
+  const [pptxReportType, setPptxReportType] = useState<PptxReportType>('campaign-performance');
+  const [generating, setGenerating] = useState(false);
 
   if (!isOpen) return null;
 
@@ -55,16 +63,78 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
     setEndDate(end.toISOString().split('T')[0]);
   };
 
-  const handleExport = () => {
-    onExport(startDate, endDate, exportType, exportFormat);
-    onClose();
+  const handleExport = async () => {
+    if (exportFormat === 'pptx') {
+      if (!calendarId) {
+        alert('Calendar context required for PPTX export');
+        return;
+      }
+      setGenerating(true);
+      try {
+        const periodLabel = `${startDate} to ${endDate}`;
+
+        if (pptxReportType === 'campaign-performance') {
+          const res = await fetch(`/api/reports/campaign-performance?calendarId=${calendarId}&periodStart=${startDate}&periodEnd=${endDate}`);
+          if (!res.ok) throw new Error('Failed to fetch report data');
+          const data = await res.json();
+
+          let insights: InsightItem[] = [];
+          try {
+            const insightRes = await fetch(`/api/ai/campaign-insights?calendarId=${calendarId}`);
+            if (insightRes.ok) {
+              const insightData = await insightRes.json();
+              insights = insightData.insights || [];
+            }
+          } catch {
+            // Continue without insights
+          }
+
+          await generateCampaignPerformanceDeck(data, insights, periodLabel);
+        } else if (pptxReportType === 'budget-review') {
+          const res = await fetch(`/api/reports/budget-review?calendarId=${calendarId}&periodStart=${startDate}&periodEnd=${endDate}`);
+          if (!res.ok) throw new Error('Failed to fetch budget data');
+          const data = await res.json();
+
+          let insights: InsightItem[] = [];
+          try {
+            const insightRes = await fetch(`/api/ai/budget-insights?calendarId=${calendarId}`);
+            if (insightRes.ok) {
+              const insightData = await insightRes.json();
+              insights = (insightData.insights || []).map((i: { type: string; title: string; description: string }) => ({
+                type: i.type,
+                title: i.title,
+                description: i.description,
+                priority: 'medium',
+              }));
+            }
+          } catch {
+            // Continue without insights
+          }
+
+          await generateBudgetReviewDeck(data, insights, periodLabel);
+        }
+
+        onClose();
+      } catch (error) {
+        console.error('Error generating PPTX:', error);
+        alert('Failed to generate PPTX report');
+      }
+      setGenerating(false);
+    } else {
+      onExport(startDate, endDate, exportType, exportFormat as 'png' | 'csv');
+      onClose();
+    }
   };
 
   const handleTypeChange = (type: 'timeline' | 'calendar' | 'table') => {
     setExportType(type);
-    if (type !== 'table' && (exportFormat === 'csv')) {
+    if (type !== 'table' && exportFormat === 'csv') {
       setExportFormat('png');
     }
+  };
+
+  const handleFormatChange = (format: ExportFormat) => {
+    setExportFormat(format);
   };
 
   return (
@@ -75,31 +145,10 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
           Export Data
         </h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Download your campaign data as an image or spreadsheet. Choose a view, format, and date range below.
+          Download your campaign data as an image, spreadsheet, or presentation deck.
         </p>
 
         <div className="space-y-6">
-          {/* Export View */}
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              Select View to Export
-            </label>
-            <div className="flex gap-2">
-              {(['timeline', 'calendar', 'table'] as const).map((type) => (
-                <button
-                  key={type}
-                  onClick={() => handleTypeChange(type)}
-                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg capitalize transition-colors ${exportType === type
-                      ? 'bg-accent-purple-btn text-white'
-                      : 'bg-muted text-foreground hover:opacity-80'
-                    }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Export Format */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -107,7 +156,7 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
             </label>
             <div className="flex gap-2">
               <button
-                onClick={() => setExportFormat('png')}
+                onClick={() => handleFormatChange('png')}
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${exportFormat === 'png'
                     ? 'bg-accent-purple-btn text-white'
                     : 'bg-muted text-foreground hover:opacity-80'
@@ -116,24 +165,85 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
                 PNG Image
               </button>
               <button
-                onClick={() => setExportFormat('csv')}
-                disabled={exportType !== 'table'}
+                onClick={() => handleFormatChange('csv')}
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${exportFormat === 'csv'
                     ? 'bg-accent-purple-btn text-white'
-                    : exportType !== 'table'
+                    : 'bg-muted text-foreground hover:opacity-80'
+                  }`}
+              >
+                CSV
+              </button>
+              <button
+                onClick={() => handleFormatChange('pptx')}
+                disabled={!calendarId}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${exportFormat === 'pptx'
+                    ? 'bg-accent-purple-btn text-white'
+                    : !calendarId
                       ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
                       : 'bg-muted text-foreground hover:opacity-80'
                   }`}
               >
-                CSV Spreadsheet
+                PPTX Deck
               </button>
             </div>
-            {exportType !== 'table' && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                CSV export is only available for Table view.
-              </p>
-            )}
           </div>
+
+          {/* View selector - only for PNG/CSV */}
+          {exportFormat !== 'pptx' && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Select View to Export
+              </label>
+              <div className="flex gap-2">
+                {(['timeline', 'calendar', 'table'] as const).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleTypeChange(type)}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg capitalize transition-colors ${exportType === type
+                        ? 'bg-accent-purple-btn text-white'
+                        : 'bg-muted text-foreground hover:opacity-80'
+                      }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+              {exportFormat === 'csv' && exportType !== 'table' && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  CSV export is only available for Table view.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* PPTX Report Type selector */}
+          {exportFormat === 'pptx' && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Report Type
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPptxReportType('campaign-performance')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${pptxReportType === 'campaign-performance'
+                      ? 'bg-accent-purple-btn text-white'
+                      : 'bg-muted text-foreground hover:opacity-80'
+                    }`}
+                >
+                  Campaign Performance
+                </button>
+                <button
+                  onClick={() => setPptxReportType('budget-review')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${pptxReportType === 'budget-review'
+                      ? 'bg-accent-purple-btn text-white'
+                      : 'bg-muted text-foreground hover:opacity-80'
+                    }`}
+                >
+                  Budget Review
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Quick Selects */}
           <div>
@@ -204,9 +314,10 @@ export function ExportModal({ isOpen, onClose, onExport, currentView }: ExportMo
           </button>
           <button
             onClick={handleExport}
-            className="px-6 py-2 text-sm font-medium text-white bg-accent-purple-btn rounded-lg hover:opacity-90 transition-colors"
+            disabled={generating}
+            className="px-6 py-2 text-sm font-medium text-white bg-accent-purple-btn rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
           >
-            Export {exportFormat.toUpperCase()}
+            {generating ? 'Generating...' : `Export ${exportFormat.toUpperCase()}`}
           </button>
         </div>
       </div>

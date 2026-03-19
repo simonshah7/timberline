@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, ReactNode } from 'react';
 import { Status, Campaign } from '@/db/schema';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import PptxGenJS from 'pptxgenjs';
+import { generateEventRoiDeck } from '@/lib/pptx/eventRoiDeck';
 import {
   SolarAltArrowLeft,
   SolarCalendarLinear,
@@ -455,6 +456,22 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
       console.error('Error generating logistics deck:', error);
       alert('Failed to generate logistics deck');
     }
+  };
+
+  const [exportingRoi, setExportingRoi] = useState(false);
+
+  const handleGenerateRoiDeck = async () => {
+    setExportingRoi(true);
+    try {
+      const res = await fetch(`/api/reports/event-roi?eventId=${eventId}`);
+      if (!res.ok) throw new Error('Failed to fetch event ROI data');
+      const data = await res.json();
+      await generateEventRoiDeck(data);
+    } catch (error) {
+      console.error('Error generating ROI deck:', error);
+      alert('Failed to generate event ROI report');
+    }
+    setExportingRoi(false);
   };
 
   if (loading) {
@@ -1249,6 +1266,28 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
                     className="px-4 py-2 text-xs font-medium text-white bg-blue-500 rounded-lg hover:opacity-90 transition-opacity"
                   >
                     Download PPTX
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Event ROI Report */}
+            <div className="bg-card border border-card-border rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                  <SolarChartLinear className="w-5 h-5 text-green-500" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-1">ROI Report</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Generate a PPTX with financial summary, attendee analysis, and YoY comparison.
+                  </p>
+                  <button
+                    onClick={handleGenerateRoiDeck}
+                    disabled={exportingRoi}
+                    className="px-4 py-2 text-xs font-medium text-white bg-green-500 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {exportingRoi ? 'Generating...' : 'Download PPTX'}
                   </button>
                 </div>
               </div>

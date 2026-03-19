@@ -732,6 +732,7 @@ function HomeInner() {
         currentView={currentView}
         onClose={() => setShowExportModal(false)}
         onExport={handleExport}
+        calendarId={currentCalendar?.id}
       />
 
       {/* AI Copilot (with integrated voice) */}
