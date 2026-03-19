@@ -27,7 +27,7 @@ export async function POST(
     }
 
     if (!webhookUrl) {
-      return NextResponse.json({ error: 'No Slack webhook URL configured. Set it in Admin Settings or on the event.' }, { status: 400 });
+      return NextResponse.json({ error: 'No Slack webhook URL configured. Set it in Settings > Slack or on the event.' }, { status: 400 });
     }
 
     // Build message based on type
