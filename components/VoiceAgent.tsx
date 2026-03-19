@@ -3,6 +3,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceAgent, VoiceAgentCallbacks, CalendarContext, ConversationEntry } from '@/hooks/useVoiceAgent';
+import {
+  SolarMicrophone,
+  SolarVolume,
+  SolarTrashBinLinear,
+  SolarCloseLinear,
+  SolarLetterLinear,
+} from '@/components/SolarIcons';
 
 interface VoiceAgentProps {
   callbacks: VoiceAgentCallbacks;
@@ -62,9 +69,7 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
             className="fixed bottom-6 right-6 z-30 w-14 h-14 rounded-full bg-accent-purple-btn text-white shadow-lg shadow-accent-purple-btn/30 hover:opacity-90 transition-opacity flex items-center justify-center"
             title="Voice Agent"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-            </svg>
+            <SolarMicrophone className="w-6 h-6" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -97,9 +102,7 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
             <div className="flex items-center justify-between px-4 py-3 border-b border-card-border bg-card">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                  </svg>
+                  <SolarMicrophone className="w-4 h-4 text-green-500" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Voice Agent</h2>
@@ -113,18 +116,14 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
                     className="p-1.5 text-gray-400 hover:text-foreground transition-colors rounded-md hover:bg-muted"
                     title="Clear conversation"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
+                    <SolarTrashBinLinear className="w-4 h-4" />
                   </button>
                 )}
                 <button
                   onClick={onClose}
                   className="p-1.5 text-gray-400 hover:text-foreground transition-colors rounded-md hover:bg-muted"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <SolarCloseLinear className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -134,9 +133,7 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
               {conversation.length === 0 && !isListening && !isProcessing && (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
-                    <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                    </svg>
+                    <SolarMicrophone className="w-6 h-6 text-green-500" />
                   </div>
                   <p className="text-sm text-foreground font-medium">Voice Agent</p>
                   <p className="text-xs text-muted-foreground mt-1 max-w-[250px] mx-auto">
@@ -237,13 +234,9 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
                       <span className="absolute inset-0 rounded-full border-2 border-red-500 animate-ping opacity-50" />
                     )}
                     {isSpeaking ? (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
-                      </svg>
+                      <SolarVolume className="w-5 h-5" />
                     ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                      </svg>
+                      <SolarMicrophone className="w-5 h-5" />
                     )}
                   </button>
                 )}
@@ -270,9 +263,7 @@ export function VoiceAgent({ callbacks, context, isOpen, onClose, onOpen }: Voic
                   disabled={!textInput.trim() || isProcessing}
                   className="flex-shrink-0 p-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-40"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
+                  <SolarLetterLinear className="w-4 h-4" />
                 </button>
               </div>
             </div>
