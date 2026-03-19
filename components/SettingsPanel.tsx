@@ -28,10 +28,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('');
   const [driveFolderId, setDriveFolderId] = useState('');
-  const [slackWebhookUrl, setSlackWebhookUrl] = useState('');
-  const [slackDefaultChannel, setSlackDefaultChannel] = useState('');
-  const [calendarOrganizerName, setCalendarOrganizerName] = useState('');
-  const [calendarOrganizerEmail, setCalendarOrganizerEmail] = useState('');
+  const [slackBotToken, setSlackBotToken] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -46,10 +43,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         setApiKey(data.ai_api_key || '');
         setModel(data.ai_model || '');
         setDriveFolderId(data.google_drive_folder_id || '');
-        setSlackWebhookUrl(data.slack_webhook_url || '');
-        setSlackDefaultChannel(data.slack_default_channel || '');
-        setCalendarOrganizerName(data.calendar_organizer_name || '');
-        setCalendarOrganizerEmail(data.calendar_organizer_email || '');
+        setSlackBotToken(data.slack_bot_token || '');
       }
     } catch {
       // Ignore load errors
@@ -79,10 +73,7 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         saveSetting('ai_api_key', apiKey),
         saveSetting('ai_model', model || DEFAULT_MODELS[provider]),
         saveSetting('google_drive_folder_id', driveFolderId),
-        saveSetting('slack_webhook_url', slackWebhookUrl),
-        saveSetting('slack_default_channel', slackDefaultChannel),
-        saveSetting('calendar_organizer_name', calendarOrganizerName),
-        saveSetting('calendar_organizer_email', calendarOrganizerEmail),
+        saveSetting('slack_bot_token', slackBotToken),
       ]);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -240,65 +231,19 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                       Slack
                     </h3>
                     <p className="text-xs text-muted-foreground mb-3">
-                      Configure Slack integration for event notifications and team updates.
+                      Connect Slack to send event notifications to dedicated channels.
                     </p>
 
-                    <label className="block text-sm font-medium text-foreground mb-1.5">Webhook URL</label>
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Bot Token</label>
                     <input
-                      type="text"
-                      value={slackWebhookUrl}
-                      onChange={(e) => setSlackWebhookUrl(e.target.value)}
-                      placeholder="https://hooks.slack.com/services/..."
+                      type="password"
+                      value={slackBotToken}
+                      onChange={(e) => setSlackBotToken(e.target.value)}
+                      placeholder="xoxb-..."
                       className="w-full px-3 py-2 bg-muted border border-card-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-purple-btn/50"
                     />
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      Global default webhook URL. Events can override this with their own webhook.
-                    </p>
-
-                    <label className="block text-sm font-medium text-foreground mt-4 mb-1.5">Default Channel</label>
-                    <input
-                      type="text"
-                      value={slackDefaultChannel}
-                      onChange={(e) => setSlackDefaultChannel(e.target.value)}
-                      placeholder="e.g., marketing-events"
-                      className="w-full px-3 py-2 bg-muted border border-card-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-purple-btn/50"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      Optional. Default channel name for notifications (without #).
-                    </p>
-                  </section>
-
-                  {/* Divider */}
-                  <div className="h-px bg-card-border" />
-
-                  {/* Calendar Invites Section */}
-                  <section>
-                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
-                      Calendar Invites
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Configure the organizer details that appear on calendar invites sent to event attendees.
-                    </p>
-
-                    <label className="block text-sm font-medium text-foreground mb-1.5">Organizer Name</label>
-                    <input
-                      type="text"
-                      value={calendarOrganizerName}
-                      onChange={(e) => setCalendarOrganizerName(e.target.value)}
-                      placeholder="e.g., Marketing Team"
-                      className="w-full px-3 py-2 bg-muted border border-card-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-purple-btn/50"
-                    />
-
-                    <label className="block text-sm font-medium text-foreground mt-4 mb-1.5">Organizer Email</label>
-                    <input
-                      type="email"
-                      value={calendarOrganizerEmail}
-                      onChange={(e) => setCalendarOrganizerEmail(e.target.value)}
-                      placeholder="e.g., events@company.com"
-                      className="w-full px-3 py-2 bg-muted border border-card-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-purple-btn/50"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1.5">
-                      This email appears as the sender on .ics calendar invites.
+                      Bot token from your Slack app. Requires <code className="text-xs">channels:read</code>, <code className="text-xs">groups:read</code>, and <code className="text-xs">chat:write</code> scopes.
                     </p>
                   </section>
                 </>
