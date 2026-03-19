@@ -25,6 +25,7 @@ import { FeedbackReviewView } from '@/components/FeedbackReviewView';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { DriveBrowser } from '@/components/DriveBrowser';
 import { ReportsView } from '@/components/ReportsView';
+import { HelpPanel } from '@/components/HelpPanel';
 
 type ViewType = 'timeline' | 'calendar' | 'table' | 'dashboard' | 'events' | 'reports';
 
@@ -63,6 +64,7 @@ function HomeInner() {
   const [showFeedbackReview, setShowFeedbackReview] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDriveBrowser, setShowDriveBrowser] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [activityDefaults, setActivityDefaults] = useState<{
     swimlaneId?: string;
@@ -493,6 +495,7 @@ function HomeInner() {
           onSeedData={handleSeedData}
           isSeedingData={isSeedingData}
           onOpenSettings={() => setShowSettings(true)}
+          onOpenHelp={() => setShowHelp(true)}
         />
         <div className="flex-1 flex items-center justify-center">
           <motion.div
@@ -540,6 +543,13 @@ function HomeInner() {
           selectedEventId={null}
           activeModals={{ activityModal: false, createCalendar: showCreateCalendar, exportModal: false, copilot: false, briefGenerator: false }}
         />
+        <HelpPanel
+          open={showHelp}
+          onClose={() => setShowHelp(false)}
+          currentView={currentView}
+          hasCalendar={false}
+          hasSwimlanes={false}
+        />
       </div>
     );
   }
@@ -572,6 +582,7 @@ function HomeInner() {
         isSeedingData={isSeedingData}
         onOpenFeedbackReview={() => setShowFeedbackReview(true)}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenHelp={() => setShowHelp(true)}
       />
 
       {currentView !== 'dashboard' && currentView !== 'events' && currentView !== 'reports' && (
@@ -842,6 +853,14 @@ function HomeInner() {
       <DriveBrowser
         open={showDriveBrowser}
         onClose={() => setShowDriveBrowser(false)}
+      />
+
+      <HelpPanel
+        open={showHelp}
+        onClose={() => setShowHelp(false)}
+        currentView={currentView}
+        hasCalendar={!!currentCalendar}
+        hasSwimlanes={!!currentCalendar && currentCalendar.swimlanes.length > 0}
       />
     </div>
   );

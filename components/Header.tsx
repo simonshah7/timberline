@@ -26,6 +26,7 @@ import {
   SolarSpinner,
   SolarSettingsLinear,
   SolarChartLinear,
+  SolarQuestionCircle,
 } from './SolarIcons';
 
 type ViewType = 'timeline' | 'calendar' | 'table' | 'dashboard' | 'events' | 'reports';
@@ -44,6 +45,7 @@ interface HeaderProps {
   isSeedingData?: boolean;
   onOpenFeedbackReview?: () => void;
   onOpenSettings?: () => void;
+  onOpenHelp?: () => void;
 }
 
 const VIEW_ICONS: Record<ViewType, React.ReactNode> = {
@@ -69,6 +71,7 @@ export function Header({
   isSeedingData,
   onOpenFeedbackReview,
   onOpenSettings,
+  onOpenHelp,
 }: HeaderProps) {
   const views: { key: ViewType; label: string; description: string }[] = [
     { key: 'timeline', label: 'Timeline', description: 'Gantt-style timeline with drag-to-create activities' },
@@ -203,6 +206,17 @@ export function Header({
         <div className="hidden lg:flex items-center gap-2">
           <ThemeToggle />
 
+          {onOpenHelp && (
+            <button
+              onClick={onOpenHelp}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title="Help"
+              aria-label="Help"
+            >
+              <SolarQuestionCircle className="w-5 h-5" />
+            </button>
+          )}
+
           <ToolsMenu
             currentCalendar={currentCalendar}
             onSeedData={onSeedData}
@@ -314,6 +328,16 @@ export function Header({
                   >
                     <SolarSettingsLinear className="w-4 h-4" />
                     Settings
+                  </button>
+                )}
+
+                {onOpenHelp && (
+                  <button
+                    onClick={() => { onOpenHelp(); setMobileMenuOpen(false); }}
+                    className="flex items-center gap-1.5 justify-center px-3 py-2 text-sm font-medium text-muted-foreground bg-muted rounded-lg hover:text-foreground transition-colors"
+                  >
+                    <SolarQuestionCircle className="w-4 h-4 text-blue-500" />
+                    Help
                   </button>
                 )}
               </div>
