@@ -334,7 +334,7 @@ export function HelpPanel({ open, onClose, currentView, hasCalendar, hasSwimlane
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {sections.map((section, sIdx) => (
-                <div key={sIdx} className="rounded-xl border border-card-border overflow-hidden">
+                <div key={sIdx} className="rounded-xl border border-card-border dark:border-slate-700/50 overflow-hidden">
                   <button
                     onClick={() => toggleSection(sIdx)}
                     className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/30 transition-colors"
@@ -376,7 +376,7 @@ export function HelpPanel({ open, onClose, currentView, hasCalendar, hasSwimlane
 
             {/* Footer */}
             <div className="px-5 py-3 border-t border-card-border">
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+              <div className="flex items-start gap-2 text-xs text-muted-foreground dark:text-slate-400">
                 <SolarLightbulbLinear className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-500" />
                 <p>
                   Tip: The help panel always shows guidance for your current view. Switch views to see relevant help for each area.
@@ -399,13 +399,13 @@ function HelpItem({ label, detail }: { label: string; detail: string }) {
 
   return (
     <div
-      className={`rounded-lg border transition-colors ${expanded ? 'border-blue-200 dark:border-blue-800/40 bg-blue-50/50 dark:bg-blue-950/20' : 'border-transparent bg-muted/40'}`}
+      className={`rounded-lg border transition-colors ${expanded ? 'border-blue-200 dark:border-blue-500/30 bg-blue-50/50 dark:bg-blue-900/25' : 'border-transparent bg-muted/40 dark:bg-muted/60'}`}
     >
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-2 px-3 py-2 text-left"
       >
-        <span className={`text-xs font-medium ${expanded ? 'text-blue-700 dark:text-blue-300' : 'text-foreground'}`}>
+        <span className={`text-xs font-medium ${expanded ? 'text-blue-700 dark:text-blue-200' : 'text-foreground'}`}>
           {label}
         </span>
         <svg
@@ -429,7 +429,7 @@ function HelpItem({ label, detail }: { label: string; detail: string }) {
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <p className="px-3 pb-2.5 text-xs text-muted-foreground leading-relaxed">
+            <p className="px-3 pb-2.5 text-xs text-muted-foreground dark:text-slate-300 leading-relaxed">
               {detail}
             </p>
           </motion.div>
