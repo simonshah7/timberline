@@ -463,6 +463,11 @@ function HomeInner() {
           </div>
           <p className="text-sm text-muted-foreground">Loading LaunchGrid</p>
         </motion.div>
+        <FeedbackWidget
+          currentView={currentView}
+          selectedEventId={null}
+          activeModals={{ activityModal: false, createCalendar: false, exportModal: false, copilot: false, briefGenerator: false }}
+        />
       </div>
     );
   }
@@ -525,6 +530,11 @@ function HomeInner() {
           isOpen={showCreateCalendar}
           onClose={() => setShowCreateCalendar(false)}
           onSubmit={handleCreateCalendar}
+        />
+        <FeedbackWidget
+          currentView={currentView}
+          selectedEventId={null}
+          activeModals={{ activityModal: false, createCalendar: showCreateCalendar, exportModal: false, copilot: false, briefGenerator: false }}
         />
       </div>
     );
