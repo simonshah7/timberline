@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Status } from '@/db/schema';
+import { SolarAltArrowDown, SolarCheckLinear, SolarCloseLinear, SolarPenLinear, SolarTrashBinLinear, SolarAddLinear } from '@/components/SolarIcons';
 
 interface StatusDropdownProps {
     statuses: Status[];
@@ -142,9 +143,7 @@ export function StatusDropdown({
                         {selectedStatus?.name || 'Select status'}
                     </span>
                 </span>
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <SolarAltArrowDown className="w-4 h-4 text-muted-foreground" />
             </button>
 
             <AnimatePresence>

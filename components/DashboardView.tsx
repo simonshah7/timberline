@@ -6,6 +6,24 @@ import { Activity, Campaign, Swimlane, Status } from '@/db/schema';
 import { formatCurrency } from '@/lib/utils';
 import { EventComparisonView } from './EventComparisonView';
 import { CampaignReportingDashboard } from './CampaignReportingDashboard';
+import {
+  SolarDollarCircle,
+  SolarClipboardLinear,
+  SolarDocumentLinear,
+  SolarClockCircle,
+  SolarTargetLinear,
+  SolarGraphUpLinear,
+  SolarAltArrowUp,
+  SolarAltArrowDown,
+  SolarColumnsLinear,
+  SolarDangerTriangle,
+  SolarDangerCircle,
+  SolarCloseCircle,
+  SolarCheckLinear,
+  SolarInfoCircle,
+  SolarCloseLinear,
+  SolarCheckCircle,
+} from './SolarIcons';
 
 interface DashboardViewProps {
   activities: Activity[];
@@ -236,125 +254,6 @@ function ActivityHeatmap({ activities }: { activities: Activity[] }) {
   );
 }
 
-// ─── SVG Icons (clean, flat style) ──────────────────────
-
-function IconDollar({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 1v14M11 4.5C11 3.12 9.66 2 8 2S5 3.12 5 4.5 6.34 7 8 7s3 1.12 3 2.5S9.66 12 8 12s-3-1.12-3-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function IconClipboard({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M6 2V1.5A.5.5 0 016.5 1h3a.5.5 0 01.5.5V2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function IconReceipt({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 2.5A.5.5 0 013.5 2h9a.5.5 0 01.5.5V14l-2-1.5L9 14l-2-1.5L5 14l-2-1.5V2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-      <path d="M5.5 5.5h5M5.5 8h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function IconGauge({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 14A6 6 0 118 2a6 6 0 010 12z" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M8 5v3l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function IconTarget({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5"/>
-      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/>
-      <circle cx="8" cy="8" r="0.75" fill="currentColor"/>
-    </svg>
-  );
-}
-
-function IconTrendUp({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2 12l4-4 2.5 2.5L14 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M10 4h4v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function IconChevronUp({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 7.5l3-3 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function IconChevronDown({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
-function IconColumns({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-      <rect x="10" y="2" width="4" height="12" rx="1" stroke="currentColor" strokeWidth="1.5"/>
-    </svg>
-  );
-}
-
-function IconAlertTriangle({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M7.134 2.5a1 1 0 011.732 0l5.196 9A1 1 0 0113.196 13H2.804a1 1 0 01-.866-1.5l5.196-9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
-      <path d="M8 6v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="8" cy="11" r="0.5" fill="currentColor"/>
-    </svg>
-  );
-}
-
-function IconAlertCircle({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M7 4.5v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="7" cy="9.5" r="0.5" fill="currentColor"/>
-    </svg>
-  );
-}
-
-function IconX({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M5 5l4 4M9 5l-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    </svg>
-  );
-}
-
-function IconCheck({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M2.5 6l2.5 2.5 4.5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
-
 // ─── KPI Card ───────────────────────────────────────────
 
 const kpiColors: Record<string, { bg: string; text: string; bgColor: string; textColor: string }> = {
@@ -423,7 +322,7 @@ function KpiCard({
         <div
           className={`text-xs font-medium flex items-center gap-1 ${trend.positive ? 'text-green-500' : 'text-red-500'}`}
         >
-          {trend.positive ? <IconChevronUp className="w-3 h-3" /> : <IconChevronDown className="w-3 h-3" />}
+          {trend.positive ? <SolarAltArrowUp className="w-3 h-3" /> : <SolarAltArrowDown className="w-3 h-3" />}
           {trend.label}
         </div>
       )}
@@ -472,7 +371,7 @@ function ColumnToggle({
         onClick={() => setOpen(!open)}
         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-card-border rounded-md hover:bg-muted/50 transition-colors"
       >
-        <IconColumns className="w-3.5 h-3.5" />
+        <SolarColumnsLinear className="w-3.5 h-3.5" />
         Columns
       </button>
       <AnimatePresence>
@@ -503,7 +402,7 @@ function ColumnToggle({
                       ? 'bg-accent-purple border-accent-purple text-white'
                       : 'border-card-border'
                   }`}>
-                    {visible && <IconCheck className="w-3 h-3" />}
+                    {visible && <SolarCheckLinear className="w-3 h-3" />}
                   </span>
                   {col.label}
                 </button>
@@ -537,10 +436,10 @@ function InsightCard({ insight, onDismiss }: { insight: Insight; onDismiss: () =
   return (
     <div className={`${s.bg} border ${s.border} rounded-lg p-3 flex items-start gap-3 group`}>
       <span className={`flex-shrink-0 mt-0.5 ${s.icon}`}>
-        {insight.type === 'warning' ? <IconAlertTriangle className="w-4 h-4" /> : insight.type === 'success' ? (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" strokeWidth="1.5"/><path d="M5.5 8l1.5 1.5 3-3.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        {insight.type === 'warning' ? <SolarDangerTriangle className="w-4 h-4" /> : insight.type === 'success' ? (
+          <SolarCheckCircle className="w-4 h-4" />
         ) : (
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" strokeWidth="1.5"/><path d="M8 5v3l2.5 1.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <SolarClockCircle className="w-4 h-4" />
         )}
       </span>
       <div className="flex-1 min-w-0">
@@ -553,7 +452,7 @@ function InsightCard({ insight, onDismiss }: { insight: Insight; onDismiss: () =
         <p className="text-[11px] text-muted-foreground leading-relaxed">{insight.description}</p>
       </div>
       <button onClick={onDismiss} className="flex-shrink-0 text-muted-foreground/50 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 14 14"><path d="M4 4l6 6M10 4l-6 6" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        <SolarCloseLinear className="w-3.5 h-3.5" />
       </button>
     </div>
   );
@@ -880,7 +779,7 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
           {children}
           <span className={`inline-flex flex-col -space-y-1 ${active ? '' : 'opacity-0 group-hover:opacity-30'}`}>
             {active ? (
-              sortDir === 'asc' ? <IconChevronUp className="w-3 h-3" /> : <IconChevronDown className="w-3 h-3" />
+              sortDir === 'asc' ? <SolarAltArrowUp className="w-3 h-3" /> : <SolarAltArrowDown className="w-3 h-3" />
             ) : null}
           </span>
         </span>
@@ -1001,9 +900,7 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
           >
             {/* KPI summary explanation */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <SolarInfoCircle className="w-4 h-4 flex-shrink-0" />
               <span>
                 <strong>Budget</strong> = sum of campaign budgets.{' '}
                 <strong>Planned</strong> = total estimated costs across activities.{' '}
@@ -1017,21 +914,21 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
               {[
                 {
-                  icon: <IconDollar />,
+                  icon: <SolarDollarCircle />,
                   label: 'Total Budget',
                   value: formatCurrency(metrics.totalBudget),
                   trend: null,
                   numericValue: metrics.totalBudget,
                 },
                 {
-                  icon: <IconClipboard />,
+                  icon: <SolarClipboardLinear />,
                   label: 'Planned Cost',
                   value: formatCurrency(metrics.totalPlanned),
                   sub: `${pct(metrics.totalBudget > 0 ? metrics.totalPlanned / metrics.totalBudget : 0)} of budget`,
                   numericValue: metrics.totalPlanned,
                 },
                 {
-                  icon: <IconReceipt />,
+                  icon: <SolarDocumentLinear />,
                   label: 'Actual Cost',
                   value: formatCurrency(metrics.totalActual),
                   trend: metrics.totalPlanned > 0
@@ -1043,7 +940,7 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
                   numericValue: metrics.totalActual,
                 },
                 {
-                  icon: <IconGauge />,
+                  icon: <SolarClockCircle />,
                   label: 'Budget Utilization',
                   value: pct(metrics.budgetUtil),
                   trend: {

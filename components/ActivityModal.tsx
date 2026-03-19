@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, Status, Swimlane, Campaign } from '@/db/schema';
 import { CURRENCIES, REGIONS, CURRENCY_LABELS, formatCurrency } from '@/lib/utils';
+import { SolarPenLinear, SolarAddLinear, SolarCloseLinear, SolarCloudUploadLinear, SolarDocumentLinear } from './SolarIcons';
 import { CampaignDropdown } from './CampaignDropdown';
 import { StatusDropdown } from './StatusDropdown';
 import { SwimlaneDropdown } from './SwimlaneDropdown';
@@ -278,13 +279,9 @@ export function ActivityModal({
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activity ? 'bg-warm-soft' : 'bg-accent-soft'}`}>
                   {activity ? (
-                    <svg className="w-4 h-4 text-warm" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                    </svg>
+                    <SolarPenLinear className="w-4 h-4 text-warm" />
                   ) : (
-                    <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
+                    <SolarAddLinear className="w-4 h-4 text-accent" />
                   )}
                 </div>
                 <h2 className="text-base font-semibold text-foreground">
@@ -292,9 +289,7 @@ export function ActivityModal({
                 </h2>
               </div>
               <button onClick={handleClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <SolarCloseLinear className="w-5 h-5" />
               </button>
             </div>
 
@@ -708,9 +703,7 @@ export function ActivityModal({
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.csv,.txt,.zip"
               />
               <label htmlFor="file-upload" className="cursor-pointer">
-                <svg className="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
+                <SolarCloudUploadLinear className="w-10 h-10 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {isUploading ? 'Uploading...' : 'Click to upload contracts, briefs, creative assets'}
                 </p>
@@ -728,9 +721,7 @@ export function ActivityModal({
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded bg-accent-purple/10 flex items-center justify-center">
-                        <svg className="w-4 h-4 text-accent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
+                        <SolarDocumentLinear className="w-4 h-4 text-accent-purple" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{file.name}</p>
