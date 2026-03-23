@@ -1,14 +1,14 @@
 import { Page, expect } from '@playwright/test';
 
 /**
- * Shared helpers for LaunchGrid E2E tests.
+ * Shared helpers for Timberline E2E tests.
  * These use the API directly to set up test state quickly.
  */
 
 /** Wait for the app to finish loading (spinner disappears) */
 export async function waitForAppLoad(page: Page) {
-  // Wait for the loading spinner to disappear or LaunchGrid text to appear
-  await page.waitForSelector('text=LaunchGrid', { timeout: 15000 });
+  // Wait for the loading spinner to disappear or Timberline text to appear
+  await page.waitForSelector('text=Timberline', { timeout: 15000 });
   await page.waitForLoadState('networkidle');
 }
 

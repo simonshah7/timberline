@@ -32,7 +32,7 @@ interface FilterBarProps {
   onStatusChange: (statusIds: string[]) => void;
 }
 
-const SAVED_FILTERS_KEY = 'launchgrid_saved_filters';
+const SAVED_FILTERS_KEY = 'timberline_saved_filters';
 
 function loadSavedFilters(): SavedFilter[] {
   if (typeof window === 'undefined') return [];

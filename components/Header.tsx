@@ -133,11 +133,7 @@ export function Header({
         <div className="flex items-center gap-2 sm:gap-5 min-w-0">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
-            <img
-              src={isDark ? '/launchgridlogodark.png' : '/launchgridlogolight.png'}
-              alt="LaunchGrid"
-              className="h-12 sm:h-14 w-auto object-contain"
-            />
+            <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Timberline</span>
           </div>
 
           {/* Divider - hidden on mobile */}
