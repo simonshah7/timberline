@@ -56,8 +56,8 @@ let slideNumber = 0;
 export function createPptx(): PptxGenJS {
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
-  pptx.author = 'LaunchGrid';
-  pptx.company = 'LaunchGrid';
+  pptx.author = 'Timberline';
+  pptx.company = 'Timberline';
   slideNumber = 0;
   return pptx;
 }

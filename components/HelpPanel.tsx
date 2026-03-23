@@ -205,7 +205,7 @@ function getHelpContent(view: ViewType, hasCalendar: boolean, hasSwimlanes: bool
 
   if (!hasCalendar) {
     sections.push({
-      title: 'Welcome to LaunchGrid',
+      title: 'Welcome to Timberline',
       items: [
         { label: 'First step', detail: 'Create your first workspace by clicking "Create Your First Workspace" or the workspace dropdown in the header.' },
         { label: 'What is a workspace?', detail: 'A workspace is a self-contained planning environment. Create one per team, quarter, or region to keep plans organized.' },

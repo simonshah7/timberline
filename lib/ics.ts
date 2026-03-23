@@ -69,7 +69,7 @@ export function generateICS(options: ICSEventOptions): string {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//LaunchGrid//Calendar Invite//EN',
+    'PRODID:-//Timberline//Calendar Invite//EN',
     `METHOD:${method}`,
     'CALSCALE:GREGORIAN',
     'BEGIN:VEVENT',
@@ -165,7 +165,7 @@ export function generateICSForEvent(
     const parts: string[] = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//LaunchGrid//Calendar Invite//EN',
+      'PRODID:-//Timberline//Calendar Invite//EN',
       'METHOD:REQUEST',
       'CALSCALE:GREGORIAN',
     ];
@@ -173,7 +173,7 @@ export function generateICSForEvent(
     // Main event as all-day wrapper
     if (event.startDate && event.endDate) {
       const mainLines = buildVEvent({
-        uid: `${event.id}@launchgrid`,
+        uid: `${event.id}@timberline`,
         summary: event.title,
         description: event.description || undefined,
         location: locationStr || undefined,
@@ -190,7 +190,7 @@ export function generateICSForEvent(
     for (const se of timedSubEvents) {
       const seLocation = se.location || locationStr || undefined;
       const seLines = buildVEvent({
-        uid: `${se.id}@launchgrid`,
+        uid: `${se.id}@timberline`,
         summary: `${event.title}: ${se.title}`,
         description: se.description || undefined,
         location: seLocation,
@@ -209,7 +209,7 @@ export function generateICSForEvent(
 
   // Simple case: single event ICS
   return generateICS({
-    uid: `${event.id}@launchgrid`,
+    uid: `${event.id}@timberline`,
     summary: event.title,
     description: event.description || undefined,
     location: locationStr || undefined,

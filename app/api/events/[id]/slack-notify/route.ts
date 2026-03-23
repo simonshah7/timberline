@@ -59,7 +59,7 @@ export async function POST(
       };
     } else {
       slackMessage = {
-        text: message || `Update from LaunchGrid: ${event.title}`,
+        text: message || `Update from Timberline: ${event.title}`,
       };
     }
 

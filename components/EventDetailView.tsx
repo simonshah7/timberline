@@ -462,8 +462,8 @@ export function EventDetailView({ eventId, statuses, campaigns, allEvents, onBac
 
       const pptx = new PptxGenJS();
       pptx.layout = 'LAYOUT_WIDE';
-      pptx.author = 'LaunchGrid';
-      pptx.company = 'LaunchGrid';
+      pptx.author = 'Timberline';
+      pptx.company = 'Timberline';
 
       // Brand constants
       const B = {

@@ -467,7 +467,7 @@ function HomeInner() {
             <div className="absolute inset-0 rounded-full border-2 border-card-border" />
             <div className="absolute inset-0 rounded-full border-2 border-accent border-t-transparent animate-spin" />
           </div>
-          <p className="text-sm text-muted-foreground">Loading LaunchGrid</p>
+          <p className="text-sm text-muted-foreground">Loading Timberline</p>
         </motion.div>
         <FeedbackWidget
           currentView={currentView}
@@ -510,7 +510,7 @@ function HomeInner() {
               </svg>
             </div>
             <h1 className="text-2xl font-semibold text-foreground mb-2 tracking-tight">
-              Welcome to LaunchGrid
+              Welcome to Timberline
             </h1>
             <p className="text-muted-foreground mb-6 leading-relaxed">
               Plan, visualize, and manage your marketing campaigns with an intuitive timeline.
