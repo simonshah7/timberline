@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useVoiceAgent, VoiceAgentCallbacks, CalendarContext } from '@/hooks/useVoiceAgent';
+import { useVoiceAgent, CalendarContext } from '@/hooks/useVoiceAgent';
+import type { AgentCallbacks, AgentCalendarContext } from '@/lib/agent-callbacks';
+import { executeAction } from '@/lib/agent-action-executor';
 import {
   SolarLightbulbLinear,
   SolarChatRoundLinear,
@@ -19,11 +21,25 @@ interface AICopilotProps {
   calendarId: string;
   isOpen: boolean;
   onClose: () => void;
-  voiceCallbacks?: VoiceAgentCallbacks;
+  agentCallbacks?: AgentCallbacks;
   voiceContext?: CalendarContext | null;
   swimlanes: Array<{ id: string; name: string }>;
   onApplyBrief: (activities: GeneratedActivity[]) => void;
   initialTab?: CopilotTab;
+}
+
+interface ActionInfo {
+  tool: string;
+  params: Record<string, unknown>;
+  status: 'done' | 'failed';
+  message: string;
+}
+
+interface ConfirmationInfo {
+  tool: string;
+  params: Record<string, unknown>;
+  message: string;
+  status: 'pending' | 'confirmed' | 'cancelled';
 }
 
 interface ChatMessage {
@@ -33,14 +49,16 @@ interface ChatMessage {
   data?: Record<string, unknown>[];
   source?: 'text' | 'voice';
   timestamp: Date;
+  actions?: ActionInfo[];
+  confirmations?: ConfirmationInfo[];
 }
 
 const SUGGESTED_QUESTIONS = [
+  'Switch to dashboard view',
   "What's our total budget?",
+  'Create an activity for next week',
   'Which campaigns are over budget?',
   'Top performing campaigns',
-  'Activities needing metrics',
-  'Compare US vs EMEA',
 ];
 
 const VOICE_SUGGESTIONS = [
@@ -49,13 +67,19 @@ const VOICE_SUGGESTIONS = [
   'How much have we spent?',
 ];
 
-export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceContext, swimlanes, onApplyBrief, initialTab }: AICopilotProps) {
+export function AICopilot({ calendarId, isOpen, onClose, agentCallbacks, voiceContext, swimlanes, onApplyBrief, initialTab }: AICopilotProps) {
   const [activeTab, setActiveTab] = useState<CopilotTab>(initialTab || 'chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const callbacksRef = useRef(agentCallbacks);
+  const contextRef = useRef(voiceContext);
+
+  // Keep refs in sync
+  useEffect(() => { callbacksRef.current = agentCallbacks; }, [agentCallbacks]);
+  useEffect(() => { contextRef.current = voiceContext; }, [voiceContext]);
 
   // Respond to initialTab changes (e.g. voice agent triggers "open brief")
   useEffect(() => {
@@ -64,8 +88,21 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
     }
   }, [initialTab]);
 
-  // Voice agent integration
-  const defaultCallbacks: VoiceAgentCallbacks = {
+  // Voice agent integration - use agentCallbacks for voice too
+  const voiceCallbacks = agentCallbacks ? {
+    onCreateActivity: agentCallbacks.onCreateActivity,
+    onUpdateActivity: agentCallbacks.onUpdateActivity,
+    onDeleteActivity: agentCallbacks.onDeleteActivity,
+    onSwitchView: agentCallbacks.onSwitchView,
+    onSetSearch: agentCallbacks.onSetSearch,
+    onSetCampaignFilter: agentCallbacks.onSetCampaignFilter,
+    onSetStatusFilter: agentCallbacks.onSetStatusFilter,
+    onClearFilters: agentCallbacks.onClearFilters,
+    onOpenCopilot: agentCallbacks.onOpenCopilot,
+    onOpenBriefGenerator: agentCallbacks.onOpenBriefGenerator,
+  } : undefined;
+
+  const defaultVoiceCallbacks = {
     onCreateActivity: async () => {},
     onUpdateActivity: async () => {},
     onDeleteActivity: async () => {},
@@ -78,8 +115,8 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
     onOpenBriefGenerator: () => {},
   };
 
-  const voice = useVoiceAgent(voiceCallbacks || defaultCallbacks, voiceContext || null);
-  const hasVoice = !!voiceCallbacks;
+  const voice = useVoiceAgent(voiceCallbacks || defaultVoiceCallbacks, voiceContext || null);
+  const hasVoice = !!agentCallbacks;
 
   // Sync voice conversation entries into our messages
   const lastSyncedVoiceCount = useRef(0);
@@ -112,7 +149,66 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
     }
   }, [isOpen, activeTab]);
 
-  // Send text message through copilot API (analytics queries)
+  // Execute a confirmed destructive action
+  const handleConfirm = useCallback(async (messageId: string, confirmationIndex: number) => {
+    const cb = callbacksRef.current;
+    const ctx = contextRef.current;
+    if (!cb || !ctx) return;
+
+    setMessages((prev) => prev.map((msg) => {
+      if (msg.id !== messageId || !msg.confirmations) return msg;
+      const updated = [...msg.confirmations];
+      updated[confirmationIndex] = { ...updated[confirmationIndex], status: 'confirmed' };
+      return { ...msg, confirmations: updated };
+    }));
+
+    // Find the confirmation
+    const msg = messages.find((m) => m.id === messageId);
+    const confirmation = msg?.confirmations?.[confirmationIndex];
+    if (!confirmation) return;
+
+    try {
+      const agentContext: AgentCalendarContext = {
+        calendarId,
+        swimlanes: ctx.swimlanes,
+        statuses: ctx.statuses,
+        campaigns: ctx.campaigns,
+        activities: ctx.activities,
+      };
+      const result = await executeAction(confirmation.tool, confirmation.params, cb, agentContext);
+
+      // Add action result as a new message
+      const resultMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: result.message,
+        source: 'text',
+        timestamp: new Date(),
+        actions: [{ tool: confirmation.tool, params: confirmation.params, status: result.success ? 'done' : 'failed', message: result.message }],
+      };
+      setMessages((prev) => [...prev, resultMessage]);
+    } catch {
+      const errorMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Failed to execute action. Please try again.',
+        source: 'text',
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
+  }, [messages, calendarId]);
+
+  const handleCancel = useCallback((messageId: string, confirmationIndex: number) => {
+    setMessages((prev) => prev.map((msg) => {
+      if (msg.id !== messageId || !msg.confirmations) return msg;
+      const updated = [...msg.confirmations];
+      updated[confirmationIndex] = { ...updated[confirmationIndex], status: 'cancelled' };
+      return { ...msg, confirmations: updated };
+    }));
+  }, []);
+
+  // Send text message through copilot API (now agentic)
   const sendTextMessage = async (question: string) => {
     if (!question.trim() || isLoading) return;
 
@@ -129,17 +225,81 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
     setIsLoading(true);
 
     try {
+      // Build conversation history for multi-turn context
+      const history = messages
+        .filter((m) => m.source === 'text')
+        .slice(-10)
+        .map((m) => ({ role: m.role, content: m.content }));
+
+      // Build context from voiceContext
+      const ctx = contextRef.current;
+      const apiContext = ctx ? {
+        swimlanes: ctx.swimlanes.map((s) => ({ id: s.id, name: s.name })),
+        statuses: ctx.statuses.map((s) => ({ id: s.id, name: s.name })),
+        campaigns: ctx.campaigns.map((c) => ({ id: c.id, name: c.name })),
+        activityCount: ctx.activities.length,
+      } : undefined;
+
       const response = await fetch('/api/ai/copilot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ calendarId, question: question.trim() }),
+        body: JSON.stringify({
+          calendarId,
+          question: question.trim(),
+          history,
+          context: apiContext,
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to get response');
       }
 
-      const result: { answer: string; data?: Record<string, unknown>[] } = await response.json();
+      const result: {
+        answer: string;
+        data?: Record<string, unknown>[];
+        actions: Array<{ tool: string; params: Record<string, unknown> }>;
+        confirmations: Array<{ tool: string; params: Record<string, unknown>; message: string }>;
+      } = await response.json();
+
+      // Execute client-side actions
+      const executedActions: ActionInfo[] = [];
+      const cb = callbacksRef.current;
+
+      if (cb && ctx && result.actions.length > 0) {
+        const agentContext: AgentCalendarContext = {
+          calendarId,
+          swimlanes: ctx.swimlanes,
+          statuses: ctx.statuses,
+          campaigns: ctx.campaigns,
+          activities: ctx.activities,
+        };
+
+        for (const action of result.actions) {
+          try {
+            const actionResult = await executeAction(action.tool, action.params, cb, agentContext);
+            executedActions.push({
+              tool: action.tool,
+              params: action.params,
+              status: actionResult.success ? 'done' : 'failed',
+              message: actionResult.message,
+            });
+          } catch {
+            executedActions.push({
+              tool: action.tool,
+              params: action.params,
+              status: 'failed',
+              message: `Failed to execute ${action.tool}.`,
+            });
+          }
+        }
+      }
+
+      // Map confirmations
+      const pendingConfirmations: ConfirmationInfo[] = (result.confirmations || []).map((c) => ({
+        ...c,
+        status: 'pending' as const,
+      }));
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
@@ -148,6 +308,8 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
         data: result.data,
         source: 'text',
         timestamp: new Date(),
+        actions: executedActions.length > 0 ? executedActions : undefined,
+        confirmations: pendingConfirmations.length > 0 ? pendingConfirmations : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
@@ -214,6 +376,58 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
             ))}
           </tbody>
         </table>
+      </div>
+    );
+  };
+
+  const renderActions = (actions: ActionInfo[]) => {
+    return (
+      <div className="mt-2 space-y-1">
+        {actions.map((action, i) => (
+          <div
+            key={i}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium ${
+              action.status === 'done'
+                ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                : 'bg-red-500/10 text-red-600 dark:text-red-400'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${action.status === 'done' ? 'bg-green-500' : 'bg-red-500'}`} />
+            {action.message}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const renderConfirmations = (confirmations: ConfirmationInfo[], messageId: string) => {
+    return (
+      <div className="mt-2 space-y-2">
+        {confirmations.map((confirmation, i) => (
+          <div key={i} className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5">
+            <p className="text-xs text-foreground font-medium mb-2">{confirmation.message}</p>
+            {confirmation.status === 'pending' ? (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleConfirm(messageId, i)}
+                  className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                >
+                  Confirm
+                </button>
+                <button
+                  onClick={() => handleCancel(messageId, i)}
+                  className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider bg-muted text-foreground rounded-md hover:bg-card-hover transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <span className={`text-[11px] font-medium ${confirmation.status === 'confirmed' ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`}>
+                {confirmation.status === 'confirmed' ? 'Confirmed' : 'Cancelled'}
+              </span>
+            )}
+          </div>
+        ))}
       </div>
     );
   };
@@ -319,7 +533,7 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
                     </div>
                     <p className="text-sm text-foreground font-medium">AI Copilot</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                      Ask questions about your campaigns or use voice to take actions.
+                      Ask questions or give commands — I can switch views, create activities, manage channels, and more.
                       {voice.isSupported && hasVoice && ' Tap the mic button to speak a command.'}
                     </p>
                   </div>
@@ -347,7 +561,7 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
 
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Suggested questions
+                      Try saying
                     </p>
                     {SUGGESTED_QUESTIONS.map((q) => (
                       <button
@@ -399,6 +613,8 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
                     )}
                     <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     {msg.data && msg.data.length > 0 && renderDataTable(msg.data)}
+                    {msg.actions && msg.actions.length > 0 && renderActions(msg.actions)}
+                    {msg.confirmations && msg.confirmations.length > 0 && renderConfirmations(msg.confirmations, msg.id)}
                     <p
                       className={`text-[10px] mt-1 ${
                         msg.role === 'user' ? 'text-white/60' : 'text-gray-400'
@@ -490,7 +706,7 @@ export function AICopilot({ calendarId, isOpen, onClose, voiceCallbacks, voiceCo
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask about your campaigns..."
+                  placeholder="Ask a question or give a command..."
                   disabled={isAnyLoading || voice.isListening}
                   className="flex-1 px-3 py-2 text-sm border border-card-border rounded-lg bg-background text-foreground placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-accent-purple disabled:opacity-50"
                 />

@@ -17,7 +17,8 @@ import { Calendar, Status, Swimlane, Campaign, Activity } from '@/db/schema';
 import { EventsListView } from '@/components/EventsListView';
 import type { EventListItem } from '@/components/EventsListView';
 import { EventDetailView } from '@/components/EventDetailView';
-import type { VoiceAgentCallbacks, CalendarContext } from '@/hooks/useVoiceAgent';
+import type { CalendarContext } from '@/hooks/useVoiceAgent';
+import type { AgentCallbacks } from '@/lib/agent-callbacks';
 import { exportToPNG, exportToCSV } from '@/lib/export';
 import { ToastProvider, useToast } from '@/components/Toast';
 import { FeedbackWidget } from '@/components/FeedbackWidget';
@@ -784,7 +785,7 @@ function HomeInner() {
               campaignId: a.campaignId,
             })),
           } satisfies CalendarContext}
-          voiceCallbacks={{
+          agentCallbacks={{
             onCreateActivity: async (data) => {
               await handleActivityCreate(data.swimlaneId, data.startDate, data.endDate, {
                 title: data.title,
@@ -809,7 +810,43 @@ function HomeInner() {
             },
             onOpenCopilot: () => setShowCopilot(true),
             onOpenBriefGenerator: () => { setCopilotInitialTab('brief'); setShowCopilot(true); },
-          } satisfies VoiceAgentCallbacks}
+            onNavigateToDate: (startDate: string) => {
+              // Switch to timeline view and scroll to the date
+              setCurrentView('timeline');
+              // Timeline will pick up the scrollToDate via a ref or state
+              // For now, we set a scroll target that TimelineView can use
+              const el = document.querySelector(`[data-date="${startDate}"]`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+            },
+            onOpenActivityModal: (activityId: string) => {
+              const activity = currentCalendar?.activities.find((a) => a.id === activityId);
+              if (activity) {
+                handleActivityClick(activity);
+              }
+            },
+            onCreateSwimlane: handleCreateSwimlane,
+            onEditSwimlane: handleEditSwimlane,
+            onDeleteSwimlane: handleDeleteSwimlane,
+            onCreateCampaign: async (name: string, budget?: number) => {
+              try {
+                await fetch('/api/campaigns', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ calendarId: currentCalendar?.id, name, budget: budget || 0 }),
+                });
+                await fetchCalendarData(currentCalendar!.id);
+                toast.success(`Campaign "${name}" created`);
+              } catch {
+                toast.error('Failed to create campaign');
+              }
+            },
+            onOpenExport: () => setShowExportModal(true),
+            onOpenSettings: () => setShowSettings(true),
+            onGenerateReport: (type: string) => {
+              setCurrentView('reports');
+              // The reports view will handle generation based on the type
+            },
+          } satisfies AgentCallbacks}
         />
       )}
 
