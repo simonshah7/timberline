@@ -29,6 +29,11 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
   const [model, setModel] = useState('');
   const [driveFolderId, setDriveFolderId] = useState('');
   const [slackBotToken, setSlackBotToken] = useState('');
+  const [asanaClientId, setAsanaClientId] = useState('');
+  const [asanaClientSecret, setAsanaClientSecret] = useState('');
+  const [asanaConnected, setAsanaConnected] = useState(false);
+  const [asanaUserName, setAsanaUserName] = useState('');
+  const [asanaConnecting, setAsanaConnecting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -44,6 +49,10 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         setModel(data.ai_model || '');
         setDriveFolderId(data.google_drive_folder_id || '');
         setSlackBotToken(data.slack_bot_token || '');
+        setAsanaClientId(data.asana_client_id || '');
+        setAsanaClientSecret(data.asana_client_secret || '');
+        setAsanaConnected(!!data.asana_access_token);
+        setAsanaUserName(data.asana_user_name || '');
       }
     } catch {
       // Ignore load errors
@@ -74,6 +83,8 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
         saveSetting('ai_model', model || DEFAULT_MODELS[provider]),
         saveSetting('google_drive_folder_id', driveFolderId),
         saveSetting('slack_bot_token', slackBotToken),
+        saveSetting('asana_client_id', asanaClientId),
+        saveSetting('asana_client_secret', asanaClientSecret),
       ]);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -88,6 +99,38 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
     if (!key) return '';
     if (key.length <= 8) return '****';
     return key.slice(0, 4) + '****' + key.slice(-4);
+  };
+
+  // Detect return from Asana OAuth flow
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('asana') === 'connected' && open) {
+      loadSettings();
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [open, loadSettings]);
+
+  const handleAsanaConnect = async () => {
+    setAsanaConnecting(true);
+    try {
+      await Promise.all([
+        saveSetting('asana_client_id', asanaClientId),
+        saveSetting('asana_client_secret', asanaClientSecret),
+      ]);
+      window.location.href = '/api/asana/authorize';
+    } catch {
+      setAsanaConnecting(false);
+    }
+  };
+
+  const handleAsanaDisconnect = async () => {
+    await Promise.all([
+      saveSetting('asana_access_token', ''),
+      saveSetting('asana_refresh_token', ''),
+      saveSetting('asana_user_name', ''),
+    ]);
+    setAsanaConnected(false);
+    setAsanaUserName('');
   };
 
   const [showKey, setShowKey] = useState(false);
@@ -244,6 +287,72 @@ export function SettingsPanel({ open, onClose }: SettingsPanelProps) {
                     />
                     <p className="text-xs text-muted-foreground mt-1.5">
                       Bot token from your Slack app. Requires <code className="text-xs">channels:read</code>, <code className="text-xs">groups:read</code>, and <code className="text-xs">chat:write</code> scopes.
+                    </p>
+                  </section>
+
+                  {/* Divider */}
+                  <div className="h-px bg-card-border" />
+
+                  {/* Asana Section */}
+                  <section>
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-3">
+                      Asana
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Connect to Asana via OAuth to enable task management features for detailed production tracking.
+                    </p>
+
+                    <label className="block text-sm font-medium text-foreground mb-1.5">Client ID</label>
+                    <input
+                      type="text"
+                      value={asanaClientId}
+                      onChange={(e) => setAsanaClientId(e.target.value)}
+                      placeholder="Enter your Asana app Client ID"
+                      className="w-full px-3 py-2 bg-muted border border-card-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-purple-btn/50"
+                    />
+
+                    <label className="block text-sm font-medium text-foreground mt-4 mb-1.5">Client Secret</label>
+                    <input
+                      type="password"
+                      value={asanaClientSecret}
+                      onChange={(e) => setAsanaClientSecret(e.target.value)}
+                      placeholder="Enter your Asana app Client Secret"
+                      className="w-full px-3 py-2 bg-muted border border-card-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent-purple-btn/50"
+                    />
+
+                    <div className="mt-4">
+                      {asanaConnected ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-sm text-green-400">
+                              Connected as {asanaUserName || 'Asana User'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={handleAsanaDisconnect}
+                            className="px-4 py-2 text-sm font-medium text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+                          >
+                            Disconnect
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={handleAsanaConnect}
+                          disabled={!asanaClientId || !asanaClientSecret || asanaConnecting}
+                          className="px-4 py-2.5 text-sm font-medium text-white bg-accent-purple-btn rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                          {asanaConnecting ? 'Connecting...' : 'Connect to Asana'}
+                        </button>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Create an app at{' '}
+                      <code className="text-xs">https://app.asana.com/0/my-apps</code>{' '}
+                      and register{' '}
+                      <code className="text-xs">{typeof window !== 'undefined' ? `${window.location.origin}/api/asana/callback` : '/api/asana/callback'}</code>{' '}
+                      as the redirect URI.
                     </p>
                   </section>
                 </>
