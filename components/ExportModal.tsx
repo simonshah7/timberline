@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { generateCampaignPerformanceDeck } from '@/lib/pptx/campaignDeck';
 import { generateBudgetReviewDeck } from '@/lib/pptx/budgetDeck';
 import type { InsightItem } from '@/lib/pptx/shared';
@@ -31,8 +32,6 @@ export function ExportModal({ isOpen, onClose, onExport, currentView, calendarId
   const [exportFormat, setExportFormat] = useState<ExportFormat>('png');
   const [pptxReportType, setPptxReportType] = useState<PptxReportType>('campaign-performance');
   const [generating, setGenerating] = useState(false);
-
-  if (!isOpen) return null;
 
   const setQuickRange = (range: 'month' | 'quarter' | 'year' | 'all') => {
     const now = new Date();
@@ -138,9 +137,23 @@ export function ExportModal({ isOpen, onClose, onExport, currentView, calendarId
   };
 
   return (
+    <AnimatePresence>
+      {isOpen && (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-card rounded-lg shadow-xl max-w-md w-full mx-4 p-6 border border-card-border">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-overlay backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="relative bg-card rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 border border-card-border"
+      >
         <h2 className="text-xl font-semibold text-foreground mb-1">
           Export Data
         </h2>
@@ -320,7 +333,9 @@ export function ExportModal({ isOpen, onClose, onExport, currentView, calendarId
             {generating ? 'Generating...' : `Export ${exportFormat.toUpperCase()}`}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
+      )}
+    </AnimatePresence>
   );
 }

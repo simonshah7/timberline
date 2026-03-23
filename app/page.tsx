@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/Header';
 import { FilterBar } from '@/components/FilterBar';
 import { TimelineView } from '@/components/TimelineView';
@@ -637,7 +637,14 @@ function HomeInner() {
             </motion.div>
           </div>
         ) : (
-          <>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentView + (selectedEventId || '')}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+            >
             {currentView === 'timeline' && currentCalendar && (
               <TimelineView
                 activities={filteredActivities}
@@ -712,7 +719,8 @@ function HomeInner() {
                 onRefreshEvents={() => fetchEvents(currentCalendar.id)}
               />
             )}
-          </>
+            </motion.div>
+          </AnimatePresence>
         )}
       </main>
 

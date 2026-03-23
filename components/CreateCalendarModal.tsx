@@ -39,12 +39,28 @@ export function CreateCalendarModal({ isOpen, onClose, onSubmit }: CreateCalenda
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
+    <AnimatePresence>
+      {isOpen && (
     <div className="fixed inset-0 z-50 flex items-center justify-center" role="presentation">
-      <div className="absolute inset-0 bg-black/50" onClick={handleClose} aria-hidden="true" />
-      <div role="dialog" aria-modal="true" aria-labelledby="create-calendar-title" className="relative bg-card rounded-lg shadow-xl max-w-md w-full mx-4 p-6 border border-card-border">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-overlay backdrop-blur-sm"
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+      <motion.div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-calendar-title"
+        initial={{ opacity: 0, scale: 0.95, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 8 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="relative bg-card rounded-2xl shadow-xl max-w-md w-full mx-4 p-6 border border-card-border"
+      >
         <h2 id="create-calendar-title" className="text-xl font-semibold text-foreground mb-1">
           Create Workspace
         </h2>
@@ -84,7 +100,9 @@ export function CreateCalendarModal({ isOpen, onClose, onSubmit }: CreateCalenda
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
+      )}
+    </AnimatePresence>
   );
 }
