@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { executeAction } from '@/lib/agent-action-executor';
+import type { AgentCallbacks, AgentCalendarContext } from '@/lib/agent-callbacks';
 
 type ViewType = 'timeline' | 'calendar' | 'table' | 'dashboard' | 'events' | 'reports';
 
+// Keep backward-compatible exports
 export interface VoiceAgentCallbacks {
   onCreateActivity: (data: {
     title: string;
@@ -72,6 +75,23 @@ declare global {
   }
 }
 
+// Adapt VoiceAgentCallbacks to AgentCallbacks for the shared executor
+function toAgentCallbacks(callbacks: VoiceAgentCallbacks): AgentCallbacks {
+  return {
+    ...callbacks,
+    // Provide no-op defaults for extended callbacks not available in voice mode
+    onNavigateToDate: () => {},
+    onOpenActivityModal: () => {},
+    onCreateSwimlane: async () => {},
+    onEditSwimlane: async () => {},
+    onDeleteSwimlane: async () => {},
+    onCreateCampaign: async () => {},
+    onOpenExport: () => {},
+    onOpenSettings: () => {},
+    onGenerateReport: () => {},
+  };
+}
+
 export function useVoiceAgent(
   callbacks: VoiceAgentCallbacks,
   context: CalendarContext | null
@@ -107,133 +127,21 @@ export function useVoiceAgent(
     window.speechSynthesis.speak(utterance);
   }, []);
 
-  const resolveNames = useCallback((params: Record<string, unknown>) => {
-    const ctx = contextRef.current;
-    if (!ctx) return params;
-
-    const resolved = { ...params };
-
-    if (params.swimlaneName) {
-      const sw = ctx.swimlanes.find(
-        (s) => s.name.toLowerCase() === (params.swimlaneName as string).toLowerCase()
-      );
-      resolved.swimlaneId = sw?.id || ctx.swimlanes[0]?.id;
-      delete resolved.swimlaneName;
-    }
-
-    if (params.statusName) {
-      const st = ctx.statuses.find(
-        (s) => s.name.toLowerCase() === (params.statusName as string).toLowerCase()
-      );
-      resolved.statusId = st?.id || ctx.statuses[0]?.id;
-      delete resolved.statusName;
-    }
-
-    if (params.campaignName) {
-      const camp = ctx.campaigns.find(
-        (c) => c.name.toLowerCase() === (params.campaignName as string).toLowerCase()
-      );
-      resolved.campaignId = camp?.id || null;
-      delete resolved.campaignName;
-    }
-
-    return resolved;
-  }, []);
-
-  const executeAction = useCallback(async (tool: string, params: Record<string, unknown>) => {
+  const executeVoiceAction = useCallback(async (tool: string, params: Record<string, unknown>) => {
     const cb = callbacksRef.current;
     const ctx = contextRef.current;
+    if (!ctx) return;
 
-    switch (tool) {
-      case 'create_activity': {
-        const resolved = resolveNames(params);
-        if (!resolved.swimlaneId) {
-          if (!ctx?.swimlanes[0]) {
-            throw new Error('No swimlanes available. Please create one first.');
-          }
-          resolved.swimlaneId = ctx.swimlanes[0].id;
-        }
-        if (!resolved.statusId) {
-          if (!ctx?.statuses[0]) {
-            throw new Error('No statuses available. Please create one first.');
-          }
-          resolved.statusId = ctx.statuses[0].id;
-        }
-        await cb.onCreateActivity({
-          title: resolved.title as string,
-          startDate: resolved.startDate as string,
-          endDate: resolved.endDate as string,
-          swimlaneId: resolved.swimlaneId as string,
-          statusId: resolved.statusId as string,
-          description: resolved.description as string | undefined,
-          cost: resolved.cost as number | undefined,
-          currency: resolved.currency as string | undefined,
-          region: resolved.region as string | undefined,
-          campaignId: resolved.campaignId as string | null | undefined,
-        });
-        break;
-      }
-      case 'update_activity': {
-        const activityTitle = (params.activityTitle as string).toLowerCase();
-        const activity = ctx?.activities.find(
-          (a) => a.title.toLowerCase().includes(activityTitle)
-        );
-        if (activity) {
-          const updates = { ...params };
-          delete updates.activityTitle;
-          const resolved = resolveNames(updates);
-          await cb.onUpdateActivity(activity.id, resolved);
-        }
-        break;
-      }
-      case 'delete_activity': {
-        const activityTitle = (params.activityTitle as string).toLowerCase();
-        const activity = ctx?.activities.find(
-          (a) => a.title.toLowerCase().includes(activityTitle)
-        );
-        if (activity) {
-          await cb.onDeleteActivity(activity.id);
-        }
-        break;
-      }
-      case 'switch_view':
-        cb.onSwitchView(params.view as ViewType);
-        break;
-      case 'set_filter': {
-        if (params.searchQuery !== undefined) {
-          cb.onSetSearch(params.searchQuery as string);
-        }
-        if (params.campaignName) {
-          const camp = ctx?.campaigns.find(
-            (c) => c.name.toLowerCase() === (params.campaignName as string).toLowerCase()
-          );
-          cb.onSetCampaignFilter(camp ? [camp.id] : []);
-        }
-        if (params.statusName) {
-          const st = ctx?.statuses.find(
-            (s) => s.name.toLowerCase() === (params.statusName as string).toLowerCase()
-          );
-          cb.onSetStatusFilter(st ? [st.id] : []);
-        }
-        break;
-      }
-      case 'clear_filters':
-        cb.onClearFilters();
-        break;
-      case 'open_copilot':
-        cb.onOpenCopilot();
-        break;
-      case 'open_brief_generator':
-        cb.onOpenBriefGenerator();
-        break;
-      // MCP tools: handled as info-only for now (the API route generates speech)
-      case 'send_slack_message':
-      case 'search_email':
-      case 'create_calendar_event':
-        // These are aspirational - returned as actions but require MCP server setup
-        break;
-    }
-  }, [resolveNames]);
+    const agentContext: AgentCalendarContext = {
+      calendarId: ctx.calendarId,
+      swimlanes: ctx.swimlanes,
+      statuses: ctx.statuses,
+      campaigns: ctx.campaigns,
+      activities: ctx.activities,
+    };
+
+    await executeAction(tool, params, toAgentCallbacks(cb), agentContext);
+  }, []);
 
   const sendToAgent = useCallback(async (text: string) => {
     const ctx = contextRef.current;
@@ -273,10 +181,10 @@ export function useVoiceAgent(
 
       const result: { speech: string; actions: Array<{ tool: string; params: Record<string, unknown> }> } = await response.json();
 
-      // Execute client-side actions
+      // Execute client-side actions using shared executor
       for (const action of result.actions) {
         try {
-          await executeAction(action.tool, action.params);
+          await executeVoiceAction(action.tool, action.params);
         } catch (e) {
           console.error(`Failed to execute action ${action.tool}:`, e);
         }
@@ -307,7 +215,7 @@ export function useVoiceAgent(
     } finally {
       setIsProcessing(false);
     }
-  }, [executeAction, speak]);
+  }, [executeVoiceAction, speak]);
 
   const startListening = useCallback(() => {
     if (!isSupported) {

@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
 import { chatCompletion, type ContentBlock } from '@/lib/ai-provider';
-import { VOICE_AGENT_TOOLS } from '@/lib/voice-agent-tools';
-import { db, activities, campaigns, swimlanes } from '@/db';
-import { eq, InferSelectModel } from 'drizzle-orm';
-import { formatCurrency } from '@/lib/utils';
+import { AGENT_TOOLS } from '@/lib/agent-tools';
+import { handleAnalyticsQuery, handleListActivities } from '@/lib/analytics-handler';
 import { logger } from '@/lib/logger';
-
-type Activity = InferSelectModel<typeof activities>;
-type Campaign = InferSelectModel<typeof campaigns>;
-type Swimlane = InferSelectModel<typeof swimlanes>;
 
 interface VoiceAgentAction {
   tool: string;
@@ -19,120 +13,6 @@ interface VoiceAgentAction {
 interface VoiceAgentResponse {
   speech: string;
   actions: VoiceAgentAction[];
-}
-
-function parseNum(val: string | null | undefined): number {
-  return parseFloat(val ?? '0') || 0;
-}
-
-async function handleAnalyticsQuery(calendarId: string, question: string): Promise<string> {
-  const allActivities: Activity[] = await db.select().from(activities).where(eq(activities.calendarId, calendarId));
-  const allCampaigns: Campaign[] = await db.select().from(campaigns).where(eq(campaigns.calendarId, calendarId));
-
-  const q = question.toLowerCase().trim();
-
-  if (/how much.*(spent|spend|cost)/.test(q)) {
-    const regionMatch = q.match(/\b(us|emea|row)\b/i);
-    if (regionMatch) {
-      const region = regionMatch[1].toUpperCase();
-      const regionActivities = allActivities.filter((a: Activity) => (a.region ?? '').toUpperCase() === region);
-      const totalSpend = regionActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-      return `Total spend in ${region}: ${formatCurrency(totalSpend)} across ${regionActivities.length} activities.`;
-    }
-    const matchedCampaign = allCampaigns.find((c: Campaign) => q.includes(c.name.toLowerCase()));
-    if (matchedCampaign) {
-      const campActivities = allActivities.filter((a: Activity) => a.campaignId === matchedCampaign.id);
-      const totalSpend = campActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-      return `Total spend on "${matchedCampaign.name}": ${formatCurrency(totalSpend)} across ${campActivities.length} activities. Budget: ${formatCurrency(parseNum(matchedCampaign.budget))}.`;
-    }
-    const totalSpend = allActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-    return `Total spend across all activities: ${formatCurrency(totalSpend)}.`;
-  }
-
-  if (/over\s*budget/.test(q)) {
-    const overBudget: string[] = [];
-    for (const campaign of allCampaigns) {
-      const budget = parseNum(campaign.budget);
-      if (budget <= 0) continue;
-      const campActivities = allActivities.filter((a: Activity) => a.campaignId === campaign.id);
-      const totalSpend = campActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-      if (totalSpend > budget) {
-        overBudget.push(`${campaign.name}: spent ${formatCurrency(totalSpend)} of ${formatCurrency(budget)} budget`);
-      }
-    }
-    return overBudget.length === 0
-      ? 'No campaigns are currently over budget.'
-      : `${overBudget.length} campaign${overBudget.length === 1 ? ' is' : 's are'} over budget: ${overBudget.join('; ')}.`;
-  }
-
-  if (/total budget/.test(q)) {
-    const totalBudget = allCampaigns.reduce((s: number, c: Campaign) => s + parseNum(c.budget), 0);
-    const totalSpend = allActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-    return `Total budget: ${formatCurrency(totalBudget)}. Spent: ${formatCurrency(totalSpend)} (${totalBudget > 0 ? Math.round((totalSpend / totalBudget) * 100) : 0}% utilized).`;
-  }
-
-  if (/\broi\b/.test(q)) {
-    const totalSpend = allActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-    const totalPipeline = allActivities.reduce((s: number, a: Activity) => s + parseNum(a.pipelineGenerated), 0);
-    const roi = totalSpend > 0 ? (totalPipeline / totalSpend).toFixed(1) : 'N/A';
-    return `Overall ROI: ${roi}x (${formatCurrency(totalPipeline)} pipeline from ${formatCurrency(totalSpend)} spend).`;
-  }
-
-  if (/upcoming|next|soon/.test(q)) {
-    const now = new Date();
-    const thirtyDays = new Date(now);
-    thirtyDays.setDate(thirtyDays.getDate() + 30);
-    const upcoming = allActivities
-      .filter((a: Activity) => new Date(a.startDate) >= now && new Date(a.startDate) <= thirtyDays)
-      .sort((a: Activity, b: Activity) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-    if (upcoming.length === 0) return 'No activities starting in the next 30 days.';
-    const top = upcoming.slice(0, 5).map((a: Activity) => `${a.title} (${a.startDate})`).join(', ');
-    return `${upcoming.length} upcoming activities. Next ones: ${top}.`;
-  }
-
-  if (/top.*(perform|campaign|roi)/.test(q)) {
-    const campaignStats = allCampaigns.map((c: Campaign) => {
-      const campActivities = allActivities.filter((a: Activity) => a.campaignId === c.id);
-      const spend = campActivities.reduce((s: number, a: Activity) => s + parseNum(a.actualCost), 0);
-      const pipeline = campActivities.reduce((s: number, a: Activity) => s + parseNum(a.pipelineGenerated), 0);
-      return { name: c.name, roi: spend > 0 ? pipeline / spend : 0 };
-    }).filter((c: { name: string; roi: number }) => c.roi > 0).sort((a: { roi: number }, b: { roi: number }) => b.roi - a.roi);
-
-    if (campaignStats.length === 0) return 'No campaigns have recorded spend yet.';
-    const top = campaignStats.slice(0, 3).map((c: { name: string; roi: number }) => `${c.name} (${c.roi.toFixed(1)}x)`).join(', ');
-    return `Top performing campaigns by ROI: ${top}.`;
-  }
-
-  return `You have ${allActivities.length} activities across ${allCampaigns.length} campaigns. Try asking about spending, budget, ROI, or upcoming activities.`;
-}
-
-async function handleListActivities(
-  calendarId: string,
-  swimlaneName?: string,
-  campaignName?: string
-): Promise<string> {
-  const allActivities: Activity[] = await db.select().from(activities).where(eq(activities.calendarId, calendarId));
-  const allSwimlanes: Swimlane[] = await db.select().from(swimlanes).where(eq(swimlanes.calendarId, calendarId));
-  const allCampaigns: Campaign[] = await db.select().from(campaigns).where(eq(campaigns.calendarId, calendarId));
-
-  let filtered = allActivities;
-
-  if (swimlaneName) {
-    const sw = allSwimlanes.find((s: Swimlane) => s.name.toLowerCase() === swimlaneName.toLowerCase());
-    if (sw) filtered = filtered.filter((a: Activity) => a.swimlaneId === sw.id);
-  }
-
-  if (campaignName) {
-    const camp = allCampaigns.find((c: Campaign) => c.name.toLowerCase() === campaignName.toLowerCase());
-    if (camp) filtered = filtered.filter((a: Activity) => a.campaignId === camp.id);
-  }
-
-  if (filtered.length === 0) return 'No activities found matching those criteria.';
-
-  const sorted = filtered.sort((a: Activity, b: Activity) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  const top = sorted.slice(0, 8).map((a: Activity) => `${a.title} (${a.startDate} to ${a.endDate})`).join('; ');
-  const suffix = filtered.length > 8 ? ` and ${filtered.length - 8} more` : '';
-  return `Found ${filtered.length} activities: ${top}${suffix}.`;
 }
 
 export async function POST(request: Request) {
@@ -167,7 +47,7 @@ If the user asks something conversational, just respond naturally without tools.
     const response = await chatCompletion(
       systemPrompt,
       [{ role: 'user', content: transcript }],
-      VOICE_AGENT_TOOLS,
+      AGENT_TOOLS,
     );
 
     const actions: VoiceAgentAction[] = [];
@@ -184,14 +64,14 @@ If the user asks something conversational, just respond naturally without tools.
         // Handle server-side tools
         if (toolName === 'query_analytics') {
           const result = await handleAnalyticsQuery(calendarId, toolInput.question as string);
-          speechParts.push(result);
+          speechParts.push(result.answer);
         } else if (toolName === 'list_activities') {
           const result = await handleListActivities(
             calendarId,
             toolInput.swimlaneName as string | undefined,
             toolInput.campaignName as string | undefined
           );
-          speechParts.push(result);
+          speechParts.push(result.answer);
         } else {
           // Client-side actions
           actions.push({ tool: toolName, params: toolInput });
@@ -219,6 +99,24 @@ If the user asks something conversational, just respond naturally without tools.
             return `Opened the AI Copilot.`;
           case 'open_brief_generator':
             return `Opened the Brief Generator.`;
+          case 'navigate_to_date':
+            return `Navigated to ${a.params.startDate}.`;
+          case 'open_activity_modal':
+            return `Opened activity "${a.params.activityTitle}".`;
+          case 'create_swimlane':
+            return `Created channel "${a.params.name}".`;
+          case 'edit_swimlane':
+            return `Renamed channel "${a.params.swimlaneName}" to "${a.params.newName}".`;
+          case 'delete_swimlane':
+            return `Deleted channel "${a.params.swimlaneName}".`;
+          case 'create_campaign':
+            return `Created campaign "${a.params.name}".`;
+          case 'open_export':
+            return `Opened the export modal.`;
+          case 'open_settings':
+            return `Opened settings.`;
+          case 'generate_report':
+            return `Generating ${a.params.type} report.`;
           case 'send_slack_message':
             return `Sent Slack message to #${a.params.channel}.`;
           case 'search_email':
