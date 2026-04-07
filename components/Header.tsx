@@ -78,8 +78,8 @@ export function Header({
     { key: 'calendar', label: 'Calendar', description: 'Month grid view of all activities' },
     { key: 'table', label: 'Table', description: 'Spreadsheet view with inline editing' },
     { key: 'events', label: 'Events', description: 'Manage events, attendees, and checklists' },
-    { key: 'dashboard', label: 'Dashboard', description: 'Budget, SAO, and performance analytics' },
     { key: 'reports', label: 'Reports', description: 'Campaign, budget, and event ROI reporting decks' },
+    { key: 'dashboard', label: 'Dashboard', description: 'Budget, SAO, and performance analytics with AI insights' },
   ];
 
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});

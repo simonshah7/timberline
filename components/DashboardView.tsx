@@ -487,6 +487,35 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [exportingBudget, setExportingBudget] = useState(false);
 
+  // ── AI Insights ────────────────────────────────────────
+  const [aiInsights, setAiInsights] = useState<Insight[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [dismissedInsights, setDismissedInsights] = useState<Set<string>>(() => new Set());
+
+  useEffect(() => {
+    if (!calendarId) return;
+    let cancelled = false;
+    setInsightsLoading(true);
+    fetch(`/api/ai/budget-insights?calendarId=${calendarId}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: Insight[]) => {
+        if (!cancelled) setAiInsights(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setAiInsights([]);
+      })
+      .finally(() => {
+        if (!cancelled) setInsightsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [calendarId]);
+
+  const visibleInsights = aiInsights.filter((ins) => !dismissedInsights.has(ins.title));
+
+  function dismissInsight(title: string) {
+    setDismissedInsights((prev) => new Set(prev).add(title));
+  }
+
   const handleExportBudgetDeck = useCallback(async () => {
     if (!calendarId) return;
     setExportingBudget(true);
@@ -1045,6 +1074,54 @@ export function DashboardView({ activities, campaigns, swimlanes, statuses, cale
                 </motion.div>
               ))}
             </div>
+
+            {/* AI Insights */}
+            {(insightsLoading || visibleInsights.length > 0) && (
+              <motion.div
+                className="bg-card border border-card-border rounded-lg p-4"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-accent-purple/10 text-accent-purple">
+                      <SolarGraphUpLinear className="w-3.5 h-3.5" />
+                    </span>
+                    AI Insights & Recommendations
+                    {visibleInsights.length > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground">({visibleInsights.length})</span>
+                    )}
+                  </h3>
+                  {insightsLoading && (
+                    <span className="text-xs text-muted-foreground animate-pulse">Analyzing data...</span>
+                  )}
+                </div>
+                {insightsLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-muted/50 rounded-lg animate-pulse" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {visibleInsights.map((insight, i) => (
+                      <motion.div
+                        key={insight.title}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.05, duration: 0.25 }}
+                      >
+                        <InsightCard
+                          insight={insight}
+                          onDismiss={() => dismissInsight(insight.title)}
+                        />
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
 
             {/* Activity Heatmap */}
             <ActivityHeatmap activities={activities} />
